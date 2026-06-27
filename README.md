@@ -45,8 +45,8 @@ make kind-status
 make kind-down
 ```
 
-The local environment defaults to `kind-homelab-garden`. Static validation now
-checks both YAML rendering and repo contracts for required labels, layer/path
+The local environment defaults to `kind-homelab-garden`. Static validation
+checks YAML rendering, and Go contract tests check required labels, layer/path
 boundaries, expected namespaces, workload safety, and Service-to-Deployment
 selectors. The workflow deploys `platform/overlays/local` and
 `apps/demo-api/overlays/local`, then smoke-tests the in-cluster service.

@@ -10,7 +10,7 @@ static:
 	./validation/static.sh
 
 contracts:
-	./validation/contracts.sh
+	go test ./tests/contracts
 
 local-validate:
 	garden workflow local-validate --env local
