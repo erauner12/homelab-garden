@@ -12,10 +12,10 @@ configuration. It is a lab for testing the important delivery shape locally:
 
 ## What This Tests
 
-The default local workflow tests rendered repo contracts and running components:
+The default local workflow tests rendered manifests, Kubernetes schemas, repo contracts, and running components:
 
 ```text
-Kustomize render -> contract validation -> Garden apply -> Kubernetes readiness -> smoke checks
+Kustomize render -> Kubernetes schema validation -> Go contract validation -> Garden apply -> Kubernetes readiness -> smoke checks
 ```
 
 Garden is the local harness. Kustomize is the desired-state renderer. ArgoCD is
@@ -43,9 +43,10 @@ make kind-down
 ```
 
 The local environment defaults to `kind-homelab-garden`. `make check` runs
-static validation, Go contract tests, partial Garden config resolution, and the
-local Garden validation workflow. Static validation checks YAML rendering, and
-Go contract tests check required labels, layer/path boundaries, expected
+static render validation, Kubernetes schema validation, Go contract tests,
+partial Garden config resolution, and the local Garden validation workflow.
+Static validation checks that each Kustomize entrypoint renders. Schema validation pipes the rendered YAML through `kubeconform -strict -summary`.
+Go contract tests check repo-specific labels, layer/path boundaries, expected
 namespaces, workload safety, and Service-to-Deployment selectors. The workflow
 deploys `platform/overlays/local` and `apps/demo-api/overlays/local`, then
 smoke-tests the in-cluster service.
