@@ -12,20 +12,14 @@ configuration. It is a lab for testing the important delivery shape locally:
 
 ## What This Tests
 
-The default local workflow tests the components running in the cluster:
+The default local workflow tests running components:
 
 ```text
 Kustomize render -> Garden apply -> Kubernetes readiness -> smoke checks
 ```
 
-A future GitOps workflow will test the ArgoCD reconciliation contract:
-
-```text
-seed Git source -> ArgoCD app-of-apps -> sync/health -> smoke checks
-```
-
 Garden is the local harness. Kustomize is the desired-state renderer. ArgoCD is
-not part of the default local validation loop.
+reserved for future GitOps reconciliation testing.
 
 ## Repo Shape
 
@@ -39,8 +33,7 @@ docs/           design notes and validation philosophy
 
 ## Local Loop
 
-Create or reuse the dedicated kind cluster, run validation, inspect status, and
-tear it down when finished:
+Create or reuse the dedicated kind cluster, validate, inspect, and tear down:
 
 ```bash
 make kind-up
@@ -51,9 +44,9 @@ make kind-status
 make kind-down
 ```
 
-The local Garden environment defaults to Kubernetes context
-`kind-homelab-garden`. The workflow deploys `platform/overlays/local`, deploys
-`apps/demo-api/overlays/local`, then smoke-tests the in-cluster service.
+The local environment defaults to `kind-homelab-garden`. The workflow deploys
+`platform/overlays/local` and `apps/demo-api/overlays/local`, then smoke-tests
+the in-cluster service.
 
 ## Public Safety
 

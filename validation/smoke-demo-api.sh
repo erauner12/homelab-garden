@@ -4,7 +4,7 @@ set -euo pipefail
 namespace="${APP_NAMESPACE:-demo}"
 name="${DEMO_APP_NAME:-demo-api}"
 url="http://${name}.${namespace}.svc.cluster.local"
-check_pod="${name}-smoke-$RANDOM"
+check_pod="${name}-smoke"
 
 cleanup() {
   kubectl -n "$namespace" delete pod "$check_pod" --ignore-not-found --wait=false >/dev/null 2>&1 || true
@@ -12,6 +12,7 @@ cleanup() {
 trap cleanup EXIT
 
 kubectl -n "$namespace" rollout status "deployment/$name" --timeout=90s
+cleanup
 kubectl -n "$namespace" run "$check_pod" \
   --image=curlimages/curl:8.8.0 \
   --restart=Never \
