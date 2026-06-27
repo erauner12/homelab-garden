@@ -1,17 +1,29 @@
 # Validation Loop
 
-The default loop intentionally avoids ArgoCD.
+The default local loop intentionally avoids ArgoCD.
 
 It answers:
 
 - do the Kustomize entrypoints render?
-- can Garden apply the rendered resources to a local cluster?
+- can Garden apply the rendered resources to the dedicated kind cluster?
 - do the workloads become ready?
-- do smoke checks pass against the running service?
+- do smoke checks pass against the running service from inside the cluster?
 
-That keeps the inner loop fast and focused on component behavior.
+Run it with:
 
-An optional ArgoCD workflow can be added later to answer a different question:
+```bash
+make kind-up
+make static
+garden get config --env local --resolve=partial
+make local-validate
+make kind-status
+make kind-down
+```
+
+That keeps the inner loop fast and focused on component behavior. It tests the
+running components, not GitOps reconciliation.
+
+A future ArgoCD workflow can answer a different question:
 
 - do the ArgoCD `Application` resources point at the right desired state?
 - does app-of-apps wiring reconcile in the expected order?
