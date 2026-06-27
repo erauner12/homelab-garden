@@ -37,19 +37,18 @@ Create or reuse the dedicated kind cluster, validate, inspect, and tear down:
 
 ```bash
 make kind-up
-make static
-make contracts
-garden get config --env local --resolve=partial
-make local-validate
+make check
 make kind-status
 make kind-down
 ```
 
-The local environment defaults to `kind-homelab-garden`. Static validation
-checks YAML rendering, and Go contract tests check required labels, layer/path
-boundaries, expected namespaces, workload safety, and Service-to-Deployment
-selectors. The workflow deploys `platform/overlays/local` and
-`apps/demo-api/overlays/local`, then smoke-tests the in-cluster service.
+The local environment defaults to `kind-homelab-garden`. `make check` runs
+static validation, Go contract tests, partial Garden config resolution, and the
+local Garden validation workflow. Static validation checks YAML rendering, and
+Go contract tests check required labels, layer/path boundaries, expected
+namespaces, workload safety, and Service-to-Deployment selectors. The workflow
+deploys `platform/overlays/local` and `apps/demo-api/overlays/local`, then
+smoke-tests the in-cluster service.
 
 ## Public Safety
 
