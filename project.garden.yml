@@ -1,0 +1,30 @@
+apiVersion: garden.io/v2
+kind: Project
+name: homelab-garden
+
+defaultEnvironment: local
+
+variables:
+  appNamespace: demo
+  platformNamespace: platform
+  demoAppName: demo-api
+
+environments:
+  - name: local
+    defaultNamespace: demo
+    variables:
+      kubeContext: ""
+
+providers:
+  - name: local-kubernetes
+    environments: [local]
+    context: ${var.kubeContext}
+    setupIngressController: false
+
+scan:
+  include:
+    - platform.garden.yml
+    - apps.garden.yml
+    - validation.garden.yml
+    - gitops-plan.garden.yml
+    - workflows/*.garden.yml

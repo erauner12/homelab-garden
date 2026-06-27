@@ -1,0 +1,13 @@
+apiVersion: garden.io/v0
+kind: Deploy
+type: kubernetes
+name: platform
+description: Apply the minimal local platform layer through Kustomize.
+source:
+  path: .
+include:
+  - platform/**
+spec:
+  kustomize:
+    path: platform/overlays/local
+    version: 5

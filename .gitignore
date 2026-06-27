@@ -1,0 +1,25 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# local build/test output
+bin/
+dist/
+tmp/
+.garden/
+
+# secrets and local credentials
+*.sops.yaml
+*.agekey
+*.key
+*.pem
+kubeconfig*
+
+# Terraform artifacts are not expected here, but keep the guardrails.
+*.tfstate
+*.tfstate.*
+*.tfplan
+terraform.tfvars
+*.auto.tfvars
+!.tfvars.example

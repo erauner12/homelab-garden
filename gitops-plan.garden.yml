@@ -1,0 +1,8 @@
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: gitops-validation-plan
+description: Print the planned ArgoCD validation path.
+spec:
+  command:
+    - ./validation/gitops-plan.sh

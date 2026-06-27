@@ -1,0 +1,15 @@
+apiVersion: garden.io/v0
+kind: Deploy
+type: kubernetes
+name: demo-api
+description: Apply the demo API workload through Kustomize.
+dependencies:
+  - deploy.platform
+source:
+  path: .
+include:
+  - apps/demo-api/**
+spec:
+  kustomize:
+    path: apps/demo-api/overlays/local
+    version: 5

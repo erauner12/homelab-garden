@@ -1,0 +1,19 @@
+apiVersion: garden.io/v0
+kind: Test
+type: exec
+name: static-validation
+description: Render all Kustomize entrypoints and run lightweight static checks.
+spec:
+  command:
+    - ./validation/static.sh
+---
+apiVersion: garden.io/v0
+kind: Test
+type: exec
+name: smoke-demo-api
+description: Verify the demo API deployment is available in the local cluster.
+dependencies:
+  - deploy.demo-api
+spec:
+  command:
+    - ./validation/smoke-demo-api.sh

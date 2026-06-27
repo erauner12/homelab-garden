@@ -1,0 +1,9 @@
+apiVersion: garden.io/v0
+kind: Workflow
+name: gitops-validate
+description: Placeholder for the future ArgoCD reconciliation validation path.
+steps:
+  - description: Explain the planned ArgoCD validation path.
+    command:
+      - run
+      - gitops-validation-plan
