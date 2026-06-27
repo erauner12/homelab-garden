@@ -5,6 +5,8 @@ description: Render, deploy, and smoke-test the local Kustomize delivery path.
 steps:
   - description: Run static Kustomize validation.
     command: [test, static-validation]
+  - description: Validate rendered platform/app contracts.
+    command: [test, contract-validation]
   - description: Apply the local platform layer.
     command: [deploy, platform]
   - description: Apply the demo workload.

@@ -10,6 +10,17 @@ spec:
 apiVersion: garden.io/v0
 kind: Test
 type: exec
+name: contract-validation
+description: Validate rendered Kustomize output against repo platform/app contracts.
+spec:
+  command:
+    - go
+    - test
+    - ./tests/contracts
+---
+apiVersion: garden.io/v0
+kind: Test
+type: exec
 name: smoke-demo-api
 description: Verify the demo API deployment is available in the local cluster.
 dependencies:
