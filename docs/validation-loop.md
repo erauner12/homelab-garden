@@ -11,9 +11,18 @@ It answers:
 - do the workloads become ready?
 - do smoke checks pass against the running service from inside the cluster?
 
-Run it with the README local loop commands.
+Run it with:
 
-That keeps the inner loop focused on components, not GitOps reconciliation.
+```bash
+make kind-up
+make check
+make kind-status
+make kind-down
+```
+
+`make check` runs render validation, Go contract tests, Garden config
+resolution, Garden deploys, and the in-cluster smoke check. That keeps the
+inner loop focused on components, not GitOps reconciliation.
 
 A future ArgoCD workflow can answer a different question:
 
