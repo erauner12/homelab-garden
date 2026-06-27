@@ -6,26 +6,20 @@ This repo is intentionally small and public-safe. It is not the real homelab
 configuration. It is a lab for testing the important delivery shape locally:
 
 - render Kubernetes desired state with Kustomize
-- apply it through Garden against a local cluster
+- apply it through Garden against a local kind cluster
 - run validation and smoke checks before anything reaches a real GitOps repo
-- keep an optional ArgoCD path for testing the GitOps reconciliation contract
+- keep a future ArgoCD path for testing the GitOps reconciliation contract
 
 ## What This Tests
 
-The default workflow tests the components running in the cluster:
+The default local workflow tests running components:
 
 ```text
 Kustomize render -> Garden apply -> Kubernetes readiness -> smoke checks
 ```
 
-The optional GitOps workflow will test the ArgoCD contract:
-
-```text
-seed Git source -> ArgoCD app-of-apps -> sync/health -> smoke checks
-```
-
 Garden is the local harness. Kustomize is the desired-state renderer. ArgoCD is
-only included when the thing under test is GitOps reconciliation behavior.
+reserved for future GitOps reconciliation testing.
 
 ## Repo Shape
 
@@ -33,23 +27,26 @@ only included when the thing under test is GitOps reconciliation behavior.
 platform/       local platform resources rendered with Kustomize
 apps/           demo workloads rendered with Kustomize
 validation/     scripts used by Garden tests
+scripts/        local kind cluster helpers
 docs/           design notes and validation philosophy
 ```
 
-## First Commands
+## Local Loop
 
-Create or select a local Kubernetes cluster, then run:
+Create or reuse the dedicated kind cluster, validate, inspect, and tear down:
 
 ```bash
+make kind-up
+make static
 garden get config --env local --resolve=partial
-garden deploy platform --env local
-garden deploy demo-api --env local
-garden test static-validation --env local
-garden test smoke-demo-api --env local
+make local-validate
+make kind-status
+make kind-down
 ```
 
-The initial skeleton assumes you provide the local cluster. A future workflow can
-own Kind or Talos lifecycle directly.
+The local environment defaults to `kind-homelab-garden`. The workflow deploys
+`platform/overlays/local` and `apps/demo-api/overlays/local`, then smoke-tests
+the in-cluster service.
 
 ## Public Safety
 

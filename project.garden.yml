@@ -13,7 +13,7 @@ environments:
   - name: local
     defaultNamespace: demo
     variables:
-      kubeContext: ""
+      kubeContext: kind-homelab-garden
 
 providers:
   - name: local-kubernetes
