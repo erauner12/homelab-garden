@@ -3,6 +3,7 @@ kind: Namespace
 metadata:
   name: platform
   labels:
+    app.kubernetes.io/name: platform
     app.kubernetes.io/part-of: homelab-garden
     homelab-garden.io/layer: platform
 ---
@@ -11,5 +12,6 @@ kind: Namespace
 metadata:
   name: demo
   labels:
+    app.kubernetes.io/name: demo
     app.kubernetes.io/part-of: homelab-garden
-    homelab-garden.io/layer: app
+    homelab-garden.io/layer: platform

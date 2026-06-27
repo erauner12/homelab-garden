@@ -1,4 +1,4 @@
-.PHONY: kind-up kind-status static local-validate kind-down
+.PHONY: kind-up kind-status static contracts local-validate kind-down
 
 kind-up:
 	./scripts/kind-up.sh
@@ -8,6 +8,9 @@ kind-status:
 
 static:
 	./validation/static.sh
+
+contracts:
+	./validation/contracts.sh
 
 local-validate:
 	garden workflow local-validate --env local

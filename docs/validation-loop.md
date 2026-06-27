@@ -5,6 +5,8 @@ The default local loop intentionally avoids ArgoCD.
 It answers:
 
 - do the Kustomize entrypoints render?
+- does the rendered output satisfy repo contracts for labels, layers,
+  namespaces, workload safety, and Service selectors?
 - can Garden apply the rendered resources to the dedicated kind cluster?
 - do the workloads become ready?
 - do smoke checks pass against the running service from inside the cluster?
