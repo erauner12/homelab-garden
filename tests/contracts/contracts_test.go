@@ -23,6 +23,18 @@ var allowedLayers = map[string]bool{
 
 var requiredNamespaces = []string{"platform", "demo"}
 
+var clusterScopedKinds = map[string]bool{
+	"ClusterRole":                    true,
+	"ClusterRoleBinding":             true,
+	"CustomResourceDefinition":       true,
+	"Namespace":                      true,
+	"Node":                           true,
+	"PersistentVolume":               true,
+	"StorageClass":                   true,
+	"ValidatingWebhookConfiguration": true,
+	"MutatingWebhookConfiguration":   true,
+}
+
 type object map[string]any
 
 func TestRenderedContracts(t *testing.T) {
@@ -31,6 +43,7 @@ func TestRenderedContracts(t *testing.T) {
 	all = append(all, renderAndCheck(t, "apps/demo-api/overlays/local", "app")...)
 
 	checkNoMessages(t, validateRequiredNamespaces(all))
+	checkNoMessages(t, validateNamespaceBoundaries(all))
 	checkNoMessages(t, validateDeployments(all))
 	checkNoMessages(t, validateServices(all))
 }
@@ -62,6 +75,39 @@ func TestContractFixtures(t *testing.T) {
 				"missing resource requests",
 				"missing resource limits",
 			},
+		},
+		{
+			name:          "container missing resource keys",
+			path:          "tests/contracts/testdata/container-missing-resource-keys",
+			expectedLayer: "app",
+			want: []string{
+				"missing resource requests.memory",
+				"missing resource limits.cpu",
+			},
+		},
+		{
+			name:          "app namespace boundary",
+			path:          "tests/contracts/testdata/app-platform-namespace",
+			expectedLayer: "app",
+			want:          []string{"app-layer namespaced resources must render into namespace demo"},
+		},
+		{
+			name:          "platform namespace boundary",
+			path:          "tests/contracts/testdata/platform-wrong-namespace",
+			expectedLayer: "platform",
+			want:          []string{"platform-layer namespaced resources must render into namespace platform"},
+		},
+		{
+			name:          "deployment selector mismatch",
+			path:          "tests/contracts/testdata/deployment-selector-mismatch",
+			expectedLayer: "app",
+			want:          []string{"selector.matchLabels must match pod template labels"},
+		},
+		{
+			name:          "service selector missing name",
+			path:          "tests/contracts/testdata/service-selector-missing-name",
+			expectedLayer: "app",
+			want:          []string{"service selector must include app.kubernetes.io/name"},
 		},
 		{
 			name:          "service selector no deployment",
@@ -107,6 +153,7 @@ func checkNoMessages(t *testing.T, messages []string) {
 func validateObjects(objects []object, expectedLayer string) []string {
 	var messages []string
 	messages = append(messages, validateLabels(objects, expectedLayer)...)
+	messages = append(messages, validateNamespaceBoundaries(objects)...)
 	messages = append(messages, validateDeployments(objects)...)
 	messages = append(messages, validateServices(objects)...)
 	return messages
@@ -198,6 +245,35 @@ func decodeYAML(t *testing.T, data []byte) []object {
 	return objects
 }
 
+func validateNamespaceBoundaries(objects []object) []string {
+	var messages []string
+	for _, obj := range objects {
+		if clusterScopedKinds[kind(obj)] {
+			continue
+		}
+
+		ns := stringValue(nested(obj, "metadata", "namespace"))
+		if ns == "" {
+			continue
+		}
+		labels := stringMap(nested(obj, "metadata", "labels"))
+		switch labels["homelab-garden.io/layer"] {
+		case "platform":
+			if ns != "platform" {
+				messages = append(messages, fmt.Sprintf("%s: platform-layer namespaced resources must render into namespace platform, got %s", resourceID(obj), ns))
+			}
+		case "app":
+			if ns == "platform" {
+				messages = append(messages, fmt.Sprintf("%s: app-layer namespaced resources must not target namespace platform", resourceID(obj)))
+			}
+			if ns != "demo" {
+				messages = append(messages, fmt.Sprintf("%s: app-layer namespaced resources must render into namespace demo, got %s", resourceID(obj), ns))
+			}
+		}
+	}
+	return messages
+}
+
 func validateRequiredNamespaces(objects []object) []string {
 	found := map[string]bool{}
 	for _, obj := range objects {
@@ -225,17 +301,35 @@ func validateDeployments(objects []object) []string {
 			continue
 		}
 		rid := resourceID(obj)
+		selector := stringMap(nested(obj, "spec", "selector", "matchLabels"))
+		templateLabels := stringMap(nested(obj, "spec", "template", "metadata", "labels"))
+		if len(selector) == 0 {
+			messages = append(messages, fmt.Sprintf("%s: selector.matchLabels must be non-empty", rid))
+		} else if !selectorMatches(selector, templateLabels) {
+			messages = append(messages, fmt.Sprintf("%s: selector.matchLabels must match pod template labels", rid))
+		}
+
 		for _, container := range containers(obj) {
 			name := stringValue(container["name"])
 			if name == "" {
 				name = "<missing-name>"
 			}
 			resources := objectMap(container["resources"])
-			if _, ok := resources["requests"]; !ok {
+			requests := objectMap(resources["requests"])
+			limits := objectMap(resources["limits"])
+			if requests == nil {
 				messages = append(messages, fmt.Sprintf("%s container %s: missing resource requests", rid, name))
 			}
-			if _, ok := resources["limits"]; !ok {
+			if limits == nil {
 				messages = append(messages, fmt.Sprintf("%s container %s: missing resource limits", rid, name))
+			}
+			for _, key := range []string{"cpu", "memory"} {
+				if requests != nil && requests[key] == nil {
+					messages = append(messages, fmt.Sprintf("%s container %s: missing resource requests.%s", rid, name, key))
+				}
+				if limits != nil && limits[key] == nil {
+					messages = append(messages, fmt.Sprintf("%s container %s: missing resource limits.%s", rid, name, key))
+				}
 			}
 			securityContext := objectMap(container["securityContext"])
 			if privileged, ok := securityContext["privileged"].(bool); ok && privileged {
@@ -264,6 +358,9 @@ func validateServices(objects []object) []string {
 		if len(selector) == 0 {
 			messages = append(messages, fmt.Sprintf("%s: missing service selector", rid))
 			continue
+		}
+		if selector["app.kubernetes.io/name"] == "" {
+			messages = append(messages, fmt.Sprintf("%s: service selector must include app.kubernetes.io/name", rid))
 		}
 
 		serviceNamespace := namespace(service)
