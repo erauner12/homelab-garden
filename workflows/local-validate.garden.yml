@@ -11,6 +11,8 @@ steps:
     command: [test, contract-validation]
   - description: Apply the local platform layer.
     command: [deploy, platform]
+  - description: Smoke-test the platform layer.
+    command: [test, smoke-platform]
   - description: Apply the demo workload.
     command: [deploy, demo-api]
   - description: Smoke-test the demo workload.

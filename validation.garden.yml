@@ -30,6 +30,23 @@ spec:
 apiVersion: garden.io/v0
 kind: Test
 type: exec
+name: smoke-platform
+description: Verify the platform smoke deployment is available in the local cluster.
+dependencies:
+  - deploy.platform
+spec:
+  command:
+    - env
+    - SMOKE_NAMESPACE=platform
+    - SMOKE_NAME=platform-smoke
+    - SMOKE_URL=http://platform-smoke.platform.svc.cluster.local
+    - SMOKE_EXPECTED_TEXT=homelab-garden platform-smoke ok
+    - SMOKE_LABEL=platform
+    - ./validation/smoke-service.sh
+---
+apiVersion: garden.io/v0
+kind: Test
+type: exec
 name: smoke-demo-api
 description: Verify the demo API deployment is available in the local cluster.
 dependencies:
