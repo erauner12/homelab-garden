@@ -33,6 +33,21 @@ docs/           design notes and validation philosophy
 
 ## Local Loop
 
+Prerequisites for the local loop:
+
+- `go` for contract tests
+- `kind` for the local Kubernetes cluster
+- `kubectl` for cluster inspection
+- `kustomize` for rendering manifests
+- `kubeconform` for Kubernetes schema validation
+- `garden` for local workflow orchestration
+
+Check tool availability before running the full loop:
+
+```bash
+make doctor
+```
+
 Create or reuse the dedicated kind cluster, validate, inspect, and tear down:
 
 ```bash
