@@ -30,47 +30,121 @@ func TestRenderedContracts(t *testing.T) {
 	all = append(all, renderAndCheck(t, "platform/overlays/local", "platform")...)
 	all = append(all, renderAndCheck(t, "apps/demo-api/overlays/local", "app")...)
 
-	checkRequiredNamespaces(t, all)
-	checkDeployments(t, all)
-	checkServices(t, all)
+	checkNoMessages(t, validateRequiredNamespaces(all))
+	checkNoMessages(t, validateDeployments(all))
+	checkNoMessages(t, validateServices(all))
+}
+
+func TestContractFixtures(t *testing.T) {
+	tests := []struct {
+		name          string
+		path          string
+		expectedLayer string
+		want          []string
+	}{
+		{
+			name:          "missing required labels",
+			path:          "tests/contracts/testdata/missing-required-labels",
+			expectedLayer: "app",
+			want:          []string{"missing metadata label app.kubernetes.io/name"},
+		},
+		{
+			name:          "wrong layer",
+			path:          "tests/contracts/testdata/wrong-layer",
+			expectedLayer: "app",
+			want:          []string{"expected layer app, got platform"},
+		},
+		{
+			name:          "deployment missing resources",
+			path:          "tests/contracts/testdata/deployment-missing-resources",
+			expectedLayer: "app",
+			want: []string{
+				"missing resource requests",
+				"missing resource limits",
+			},
+		},
+		{
+			name:          "service selector no deployment",
+			path:          "tests/contracts/testdata/service-selector-no-deployment",
+			expectedLayer: "app",
+			want:          []string{"selector does not match any Deployment pod template labels"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			objects := renderKustomize(t, tt.path)
+			messages := validateObjects(objects, tt.expectedLayer)
+			var missing []string
+			for _, want := range tt.want {
+				if !containsMessage(messages, want) {
+					missing = append(missing, want)
+				}
+			}
+			if len(missing) > 0 {
+				t.Fatalf("missing expected message substrings %q, got:\n%s", missing, strings.Join(messages, "\n"))
+			}
+		})
+	}
 }
 
 func renderAndCheck(t *testing.T, path, expectedLayer string) []object {
 	t.Helper()
 
 	objects := renderKustomize(t, path)
+	checkNoMessages(t, validateLabels(objects, expectedLayer))
+	return objects
+}
+
+func checkNoMessages(t *testing.T, messages []string) {
+	t.Helper()
+
+	for _, message := range messages {
+		t.Error(message)
+	}
+}
+
+func validateObjects(objects []object, expectedLayer string) []string {
+	var messages []string
+	messages = append(messages, validateLabels(objects, expectedLayer)...)
+	messages = append(messages, validateDeployments(objects)...)
+	messages = append(messages, validateServices(objects)...)
+	return messages
+}
+
+func validateLabels(objects []object, expectedLayer string) []string {
+	var messages []string
 	for _, obj := range objects {
 		rid := resourceID(obj)
 		labels := stringMap(nested(obj, "metadata", "labels"))
 
 		if labels["app.kubernetes.io/name"] == "" {
-			t.Errorf("%s: missing metadata label app.kubernetes.io/name", rid)
+			messages = append(messages, fmt.Sprintf("%s: missing metadata label app.kubernetes.io/name", rid))
 		}
 		if labels["app.kubernetes.io/part-of"] != "homelab-garden" {
-			t.Errorf("%s: app.kubernetes.io/part-of must be homelab-garden", rid)
+			messages = append(messages, fmt.Sprintf("%s: app.kubernetes.io/part-of must be homelab-garden", rid))
 		}
 
 		layer := labels["homelab-garden.io/layer"]
 		switch {
 		case layer == "":
-			t.Errorf("%s: missing metadata label homelab-garden.io/layer", rid)
+			messages = append(messages, fmt.Sprintf("%s: missing metadata label homelab-garden.io/layer", rid))
 		case !allowedLayers[layer]:
-			t.Errorf("%s: homelab-garden.io/layer must be one of app, platform, policy", rid)
+			messages = append(messages, fmt.Sprintf("%s: homelab-garden.io/layer must be one of app, platform, policy", rid))
 		case layer != expectedLayer:
-			t.Errorf("%s: expected layer %s, got %s", rid, expectedLayer, layer)
+			messages = append(messages, fmt.Sprintf("%s: expected layer %s, got %s", rid, expectedLayer, layer))
 		}
 
 		if kind(obj) == "Deployment" {
 			templateLabels := stringMap(nested(obj, "spec", "template", "metadata", "labels"))
 			for _, key := range []string{"app.kubernetes.io/name", "app.kubernetes.io/part-of", "homelab-garden.io/layer"} {
 				if templateLabels[key] != labels[key] {
-					t.Errorf("%s: pod template label %s must match deployment metadata", rid, key)
+					messages = append(messages, fmt.Sprintf("%s: pod template label %s must match deployment metadata", rid, key))
 				}
 			}
 		}
 	}
-
-	return objects
+	return messages
 }
 
 func repoRoot(t *testing.T) string {
@@ -124,9 +198,7 @@ func decodeYAML(t *testing.T, data []byte) []object {
 	return objects
 }
 
-func checkRequiredNamespaces(t *testing.T, objects []object) {
-	t.Helper()
-
+func validateRequiredNamespaces(objects []object) []string {
 	found := map[string]bool{}
 	for _, obj := range objects {
 		if kind(obj) == "Namespace" {
@@ -141,13 +213,13 @@ func checkRequiredNamespaces(t *testing.T, objects []object) {
 		}
 	}
 	if len(missing) > 0 {
-		t.Errorf("missing expected Namespace resources: %s", strings.Join(missing, ", "))
+		return []string{fmt.Sprintf("missing expected Namespace resources: %s", strings.Join(missing, ", "))}
 	}
+	return nil
 }
 
-func checkDeployments(t *testing.T, objects []object) {
-	t.Helper()
-
+func validateDeployments(objects []object) []string {
+	var messages []string
 	for _, obj := range objects {
 		if kind(obj) != "Deployment" {
 			continue
@@ -160,22 +232,21 @@ func checkDeployments(t *testing.T, objects []object) {
 			}
 			resources := objectMap(container["resources"])
 			if _, ok := resources["requests"]; !ok {
-				t.Errorf("%s container %s: missing resource requests", rid, name)
+				messages = append(messages, fmt.Sprintf("%s container %s: missing resource requests", rid, name))
 			}
 			if _, ok := resources["limits"]; !ok {
-				t.Errorf("%s container %s: missing resource limits", rid, name)
+				messages = append(messages, fmt.Sprintf("%s container %s: missing resource limits", rid, name))
 			}
 			securityContext := objectMap(container["securityContext"])
 			if privileged, ok := securityContext["privileged"].(bool); ok && privileged {
-				t.Errorf("%s container %s: privileged containers are not allowed", rid, name)
+				messages = append(messages, fmt.Sprintf("%s container %s: privileged containers are not allowed", rid, name))
 			}
 		}
 	}
+	return messages
 }
 
-func checkServices(t *testing.T, objects []object) {
-	t.Helper()
-
+func validateServices(objects []object) []string {
 	var deployments []object
 	for _, obj := range objects {
 		if kind(obj) == "Deployment" {
@@ -183,6 +254,7 @@ func checkServices(t *testing.T, objects []object) {
 		}
 	}
 
+	var messages []string
 	for _, service := range objects {
 		if kind(service) != "Service" {
 			continue
@@ -190,7 +262,7 @@ func checkServices(t *testing.T, objects []object) {
 		rid := resourceID(service)
 		selector := stringMap(nested(service, "spec", "selector"))
 		if len(selector) == 0 {
-			t.Errorf("%s: missing service selector", rid)
+			messages = append(messages, fmt.Sprintf("%s: missing service selector", rid))
 			continue
 		}
 
@@ -207,9 +279,19 @@ func checkServices(t *testing.T, objects []object) {
 			}
 		}
 		if !matched {
-			t.Errorf("%s: selector does not match any Deployment pod template labels in namespace %s", rid, serviceNamespace)
+			messages = append(messages, fmt.Sprintf("%s: selector does not match any Deployment pod template labels in namespace %s", rid, serviceNamespace))
 		}
 	}
+	return messages
+}
+
+func containsMessage(messages []string, want string) bool {
+	for _, message := range messages {
+		if strings.Contains(message, want) {
+			return true
+		}
+	}
+	return false
 }
 
 func containers(deployment object) []object {
