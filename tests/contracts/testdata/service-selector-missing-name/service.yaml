@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: missing-name-selector
+  namespace: demo
+  labels:
+    app.kubernetes.io/name: missing-name-selector
+    app.kubernetes.io/part-of: homelab-garden
+    homelab-garden.io/layer: app
+spec:
+  selector:
+    tier: api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
