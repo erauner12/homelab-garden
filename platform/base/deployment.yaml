@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: platform-smoke
+  namespace: platform
+  labels:
+    app.kubernetes.io/name: platform-smoke
+    app.kubernetes.io/part-of: homelab-garden
+    homelab-garden.io/layer: platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: platform-smoke
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: platform-smoke
+        app.kubernetes.io/part-of: homelab-garden
+        homelab-garden.io/layer: platform
+    spec:
+      containers:
+        - name: platform-smoke
+          image: hashicorp/http-echo:1.0
+          args:
+            - -listen=:8080
+            - -text=homelab-garden platform-smoke ok
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
