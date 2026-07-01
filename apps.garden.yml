@@ -8,8 +8,8 @@ dependencies:
 source:
   path: .
 include:
-  - apps/demo-api/**
+  - k8s/apps/workloads/demo-api/**
 spec:
   kustomize:
-    path: apps/demo-api/overlays/local
+    path: k8s/apps/workloads/demo-api/overlays/local
     version: 5

@@ -24,8 +24,8 @@ reserved for future GitOps reconciliation testing.
 ## Repo Shape
 
 ```text
-platform/       local platform resources rendered with Kustomize
-apps/           demo workloads rendered with Kustomize
+k8s/apps/      app/domain-owned Kubernetes desired state
+k8s/targets/   thin target composition indexes over app-owned overlays
 policy/         local policy-as-code checks and Kyverno CLI fixtures
 validation/     scripts used by Garden tests
 scripts/        local kind cluster helpers
@@ -66,8 +66,10 @@ partial Garden config resolution, and the local Garden validation workflow.
 Static validation checks that each Kustomize entrypoint renders. Schema validation pipes the rendered YAML through `kubeconform -strict -summary`.
 Go contract tests check repo-specific labels, layer/path boundaries, expected
 namespaces, workload safety, and Service-to-Deployment selectors. The workflow
-deploys `platform/overlays/local` and `apps/demo-api/overlays/local`, then
-smoke-tests the in-cluster service.
+deploys `k8s/apps/platform/foundation/overlays/local` and
+`k8s/apps/workloads/demo-api/overlays/local`, while static/schema validation
+also renders `k8s/targets/local`. The workflow then smoke-tests the in-cluster
+services.
 
 ## Optional Policy Validation
 
