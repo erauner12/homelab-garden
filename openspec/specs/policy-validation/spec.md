@@ -1,7 +1,9 @@
 # policy-validation Specification
 
 ## Purpose
-TBD - created by archiving change add-policy-validation-loop. Update Purpose after archive.
+
+Define the optional local policy-as-code validation loop for Kyverno CLI checks. This capability keeps admission-style guardrails separate from the default `make check` path and from repo-specific Go contract tests.
+
 ## Requirements
 ### Requirement: Separate policy validation workflow
 The system SHALL provide a separate policy validation workflow for local Kyverno CLI checks.
