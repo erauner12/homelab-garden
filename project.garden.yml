@@ -27,4 +27,5 @@ scan:
     - apps.garden.yml
     - validation.garden.yml
     - gitops-plan.garden.yml
+    - local-argocd.garden.yml
     - workflows/*.garden.yml

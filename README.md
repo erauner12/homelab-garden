@@ -8,7 +8,7 @@ configuration. It is a lab for testing the important delivery shape locally:
 - render Kubernetes desired state with Kustomize
 - apply it through Garden against a local kind cluster
 - run validation and smoke checks before anything reaches a real GitOps repo
-- keep a future ArgoCD path for testing the GitOps reconciliation contract
+- keep an opt-in disposable ArgoCD path for testing the GitOps reconciliation contract
 
 ## What This Tests
 
@@ -19,7 +19,7 @@ Kustomize render -> Kubernetes schema validation -> Go contract validation -> Ga
 ```
 
 Garden is the local harness. Kustomize is the desired-state renderer. ArgoCD is
-reserved for future GitOps reconciliation testing.
+reserved for opt-in GitOps reconciliation testing.
 
 ## Repo Shape
 
@@ -70,6 +70,29 @@ deploys `k8s/apps/platform/foundation/overlays/local` and
 `k8s/apps/workloads/demo-api/overlays/local`, while static/schema validation
 also renders `k8s/targets/local`. The workflow then smoke-tests the in-cluster
 services.
+
+## Optional Local ArgoCD Reconciliation
+
+The default local loop remains ArgoCD-free. To test GitOps reconciliation behavior, run the separate disposable local exercise after the branch you want ArgoCD to reconcile has been pushed:
+
+```bash
+garden workflow local-argocd-reconcile --env local
+```
+
+This installs upstream ArgoCD only into the local kind cluster (`kind-homelab-garden` by default), applies a rendered temporary copy of `gitops/app-of-apps.yaml`, waits for `platform-local` and `demo-api-local` to become synced/healthy, and smoke-tests the ArgoCD-reconciled demo API. It never deploys to, configures, syncs, or manages the real homelab ArgoCD installation.
+
+The checked-in ArgoCD Applications use the stable default `targetRevision: main`. At runtime, `platform/addons/argocd/apply-local-apps.sh` patches temporary copies so the applied parent and child Applications use `ARGOCD_REPO_URL` (default: `origin`) and `ARGOCD_TARGET_REVISION` (default: current local branch, falling back to `main`). The repo/branch must be reachable to in-cluster ArgoCD over HTTPS; this first version does not configure private repository credentials. Uncommitted local changes and unpushed commits are invisible to ArgoCD until pushed to the configured revision.
+
+After the workflow is healthy, test self-heal drift manually:
+
+```bash
+kubectl --context kind-homelab-garden -n demo scale deploy demo-api --replicas=0
+kubectl --context kind-homelab-garden -n argocd get application demo-api-local -w
+```
+
+ArgoCD should restore `Deployment/demo-api` to the Git-declared replica count. Prune is intentionally disabled for the first demo app exercise.
+
+See `docs/argocd-plan.md` for source paths, ordering, and limitations.
 
 ## Optional Policy Validation
 

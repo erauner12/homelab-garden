@@ -21,8 +21,9 @@ k8s/targets/local
 - `k8s/apps/workloads/demo-api` owns the demo workload.
 - Policy fixtures remain under `policy/kyverno` until a later change needs
   admission-controller desired state under `k8s/apps/policy/**`.
-- GitOps controller resources remain deferred; no ArgoCD `Application` manifests
-  exist in this repo yet.
+- GitOps controller resources stay outside the app-owned Kustomize roots; the
+  opt-in local reconciliation exercise keeps ArgoCD `Application` manifests
+  under `gitops/`.
 
 This is an immediate minimal move for the active local roots, not a wholesale
 copy of the larger `kagent-garden` domain tree.
@@ -51,9 +52,9 @@ alone. Do not put Garden template syntax, Garden `patchResources`, shell-derived
 state, or other harness-only behavior inside `k8s/apps/**` or `k8s/targets/**`.
 Keep that behavior in Garden action/workflow configuration if it is needed.
 
-There are currently no ArgoCD `Application` resources in this repo, so there are
-no configured ArgoCD source paths to verify beyond rendering the sourceable
-Kustomize paths above.
+The local ArgoCD `Application` resources under `gitops/applications/` source
+these same app-owned overlays directly, so their configured source paths can be
+verified with raw `kustomize build` before ArgoCD is involved.
 
 ## hcloud-lab deferral
 

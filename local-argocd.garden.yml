@@ -1,0 +1,46 @@
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: local-argocd-install
+description: Install disposable ArgoCD into the local kind cluster and wait for controller readiness.
+spec:
+  command:
+    - env
+    - KUBE_CONTEXT=${var.kubeContext}
+    - bash
+    - platform/addons/argocd/install-local.sh
+---
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: local-argocd-apply-app-of-apps
+description: Apply the minimal local lab AppProject and parent app-of-apps Application.
+spec:
+  command:
+    - env
+    - KUBE_CONTEXT=${var.kubeContext}
+    - bash
+    - platform/addons/argocd/apply-local-apps.sh
+---
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: local-argocd-wait-reconcile
+description: Wait for app-of-apps, platform-local, and demo-api-local to become synced and healthy.
+spec:
+  command:
+    - env
+    - KUBE_CONTEXT=${var.kubeContext}
+    - bash
+    - platform/addons/argocd/wait-local-reconcile.sh
+---
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: local-argocd-smoke-demo-api
+description: Smoke-test the demo API after ArgoCD, not Garden, reconciles it.
+spec:
+  command:
+    - env
+    - KUBE_CONTEXT=${var.kubeContext}
+    - ./validation/smoke-demo-api.sh

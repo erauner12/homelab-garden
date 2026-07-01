@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: local-lab
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: local-lab
+    app.kubernetes.io/part-of: homelab-garden
+spec:
+  description: Minimal project for the disposable local ArgoCD reconciliation exercise.
+  sourceRepos:
+    - https://github.com/erauner12/homelab-garden.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+    - server: https://kubernetes.default.svc
+      namespace: platform
+    - server: https://kubernetes.default.svc
+      namespace: demo
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
