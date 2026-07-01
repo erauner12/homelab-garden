@@ -1,0 +1,63 @@
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: argo-rollouts-install
+description: Optionally install Argo Rollouts CRDs/controller for the local progressive delivery exercise.
+spec:
+  command:
+    - env
+    - KUBE_CONTEXT=${var.kubeContext}
+    - bash
+    - platform/addons/argo-rollouts/install-local.sh
+---
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: rollout-demo-apply
+description: Apply the good demo-api Rollout scenario.
+dependencies:
+  - run.argo-rollouts-install
+spec:
+  command:
+    - sh
+    - -c
+    - kubectl --context ${var.kubeContext} create namespace demo --dry-run=client -o yaml | kubectl --context ${var.kubeContext} apply -f - && kustomize build scenarios/good-rollout | kubectl --context ${var.kubeContext} apply -f -
+---
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: rollout-demo-status
+description: Wait for the good Rollout to complete and emit health status.
+dependencies:
+  - run.rollout-demo-apply
+spec:
+  command:
+    - sh
+    - -c
+    - for i in $(seq 1 36); do phase=$(kubectl --context ${var.kubeContext} -n demo get rollout demo-api -o jsonpath='{.status.phase}' 2>/dev/null || true); [ "$phase" = Healthy ] && break; sleep 5; done; KUBE_CONTEXT=${var.kubeContext} ./validation/health.sh
+---
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: failure-demo-readiness
+description: Apply a controlled readiness failure and emit structured health failure output.
+dependencies:
+  - run.argo-rollouts-install
+spec:
+  command:
+    - sh
+    - -c
+    - kubectl --context ${var.kubeContext} create namespace demo --dry-run=client -o yaml | kubectl --context ${var.kubeContext} apply -f - && kustomize build scenarios/failing-readiness | kubectl --context ${var.kubeContext} apply -f - && sleep 20; KUBE_CONTEXT=${var.kubeContext} ./validation/health.sh || true
+---
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: failure-demo-bad-image
+description: Apply a controlled bad image failure and show Rollout progression stopping or degrading.
+dependencies:
+  - run.argo-rollouts-install
+spec:
+  command:
+    - sh
+    - -c
+    - kubectl --context ${var.kubeContext} create namespace demo --dry-run=client -o yaml | kubectl --context ${var.kubeContext} apply -f - && kustomize build scenarios/bad-image | kubectl --context ${var.kubeContext} apply -f - && sleep 20; KUBE_CONTEXT=${var.kubeContext} ./validation/health.sh || true
