@@ -1,0 +1,11 @@
+apiVersion: garden.io/v0
+kind: Workflow
+name: rollout-demo
+description: Optional local Argo Rollouts exercise showing a successful demo-api canary progression.
+steps:
+  - description: Install Argo Rollouts CRDs/controller into the local kind cluster.
+    command: [run, argo-rollouts-install]
+  - description: Apply the good Rollout scenario.
+    command: [run, rollout-demo-apply]
+  - description: Wait for rollout success and emit structured health output.
+    command: [run, rollout-demo-status]

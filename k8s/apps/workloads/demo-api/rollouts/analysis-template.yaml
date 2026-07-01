@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: demo-api-readiness
+spec:
+  metrics:
+    - name: ready-pods
+      interval: 10s
+      count: 1
+      successCondition: result == '1'
+      provider:
+        job:
+          spec:
+            backoffLimit: 0
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: check
+                    image: bitnami/kubectl:1.30.3
+                    command:
+                      - sh
+                      - -c
+                      - kubectl -n demo get pods -l app.kubernetes.io/name=demo-api -o jsonpath='{.items[?(@.status.containerStatuses[0].ready==true)].metadata.name}' | wc -w

@@ -28,4 +28,5 @@ scan:
     - validation.garden.yml
     - gitops-plan.garden.yml
     - local-argocd.garden.yml
+    - progressive-delivery.garden.yml
     - workflows/*.garden.yml

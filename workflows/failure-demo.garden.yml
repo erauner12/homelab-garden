@@ -1,0 +1,11 @@
+apiVersion: garden.io/v0
+kind: Workflow
+name: failure-demo
+description: Optional local Argo Rollouts exercise showing controlled readiness and image failures.
+steps:
+  - description: Install Argo Rollouts CRDs/controller into the local kind cluster.
+    command: [run, argo-rollouts-install]
+  - description: Apply a readiness failure and emit structured health output.
+    command: [run, failure-demo-readiness]
+  - description: Apply a bad image failure and emit structured health output.
+    command: [run, failure-demo-bad-image]
