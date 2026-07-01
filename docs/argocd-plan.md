@@ -40,7 +40,25 @@ ARGOCD_TARGET_REVISION=my-branch \
 garden workflow local-argocd-reconcile --env local
 ```
 
-ArgoCD fetches the configured remote revision from inside the cluster. The repo and branch must be reachable to in-cluster ArgoCD over HTTPS. This first version does not configure private repository credentials; use a public/reachable branch or add credentials in a later scoped change. Uncommitted local changes are invisible. Local commits are also invisible until pushed to the configured remote revision. Use the default `make check` and `local-validate` loop for fast pre-push validation; use this workflow only after the GitOps manifests and source paths exist on the remote revision ArgoCD can fetch.
+ArgoCD fetches the configured remote revision from inside the cluster. The repo and branch must be reachable to in-cluster ArgoCD over HTTPS. Uncommitted local changes are invisible. Local commits are also invisible until pushed to the configured remote revision. Use the default `make check` and `local-validate` loop for fast pre-push validation; use this workflow only after the GitOps manifests and source paths exist on the remote revision ArgoCD can fetch.
+
+For a private GitHub repo, apply credentials only to the disposable local ArgoCD namespace at runtime:
+
+```bash
+ARGOCD_GITHUB_TOKEN="$(gh auth token)" garden workflow local-argocd-reconcile --env local
+```
+
+`GH_TOKEN` is also accepted. The username defaults to `ARGOCD_GITHUB_USERNAME`, `GITHUB_USERNAME`, `GH_USERNAME`, the GitHub repo owner parsed from `ARGOCD_REPO_URL`, then `x-access-token`.
+
+A local file handoff is also supported:
+
+```bash
+install -m 0600 secrets/argocd-repo-creds.yaml.template secrets/argocd-repo-creds.local.yaml
+# Edit secrets/argocd-repo-creds.local.yaml locally; do not commit it.
+garden workflow local-argocd-reconcile --env local
+```
+
+The default encrypted source path is `secrets/argocd-repo-creds.sops.yaml`; with `secrets/age/key.txt` present, the workflow decrypts it locally if no runtime token or plaintext credential file is provided. Override it with `ARGOCD_REPO_CREDS_SOPS_FILE=/path/to/secret.sops.yaml`. Override a plaintext file path with `ARGOCD_REPO_CREDS_FILE=/path/to/secret.yaml`.
 
 ## Desired-state paths
 

@@ -11,10 +11,16 @@ tmp/
 
 # secrets and local credentials
 *.sops.yaml
+!.sops.yaml
+!secrets/*.sops.yaml
 *.agekey
 *.key
 *.pem
 kubeconfig*
+secrets/age/key.txt
+secrets/*.local.yaml
+secrets/*.decrypted.yaml
+secrets/argocd-repo-creds.yaml
 
 # Terraform artifacts are not expected here, but keep the guardrails.
 *.tfstate
