@@ -81,7 +81,15 @@ garden workflow local-argocd-reconcile --env local
 
 This installs upstream ArgoCD only into the local kind cluster (`kind-homelab-garden` by default), applies a rendered temporary copy of `gitops/app-of-apps.yaml`, waits for `platform-local` and `demo-api-local` to become synced/healthy, and smoke-tests the ArgoCD-reconciled demo API. It never deploys to, configures, syncs, or manages the real homelab ArgoCD installation.
 
-The checked-in ArgoCD Applications use the stable default `targetRevision: main`. At runtime, `platform/addons/argocd/apply-local-apps.sh` patches temporary copies so the applied parent and child Applications use `ARGOCD_REPO_URL` (default: `origin`) and `ARGOCD_TARGET_REVISION` (default: current local branch, falling back to `main`). The repo/branch must be reachable to in-cluster ArgoCD over HTTPS; this first version does not configure private repository credentials. Uncommitted local changes and unpushed commits are invisible to ArgoCD until pushed to the configured revision.
+The checked-in ArgoCD Applications use the stable default `targetRevision: main`. At runtime, `platform/addons/argocd/apply-local-apps.sh` patches temporary copies so the applied parent and child Applications use `ARGOCD_REPO_URL` (default: `origin`) and `ARGOCD_TARGET_REVISION` (default: current local branch, falling back to `main`). The repo/branch must be reachable to in-cluster ArgoCD over HTTPS. Uncommitted local changes and unpushed commits are invisible to ArgoCD until pushed to the configured revision.
+
+If the GitHub repo is private, pass credentials only at local runtime. The simplest path is:
+
+```bash
+ARGOCD_GITHUB_TOKEN="$(gh auth token)" garden workflow local-argocd-reconcile --env local
+```
+
+`GH_TOKEN` is also accepted, and `ARGOCD_GITHUB_USERNAME` can override the username. The repo also supports a SOPS-encrypted local source at `secrets/argocd-repo-creds.sops.yaml`; with `secrets/age/key.txt` present, the workflow decrypts it locally and applies only the live Secret to the disposable kind ArgoCD namespace. For a plaintext local handoff instead, copy `secrets/argocd-repo-creds.yaml.template` to the gitignored `secrets/argocd-repo-creds.local.yaml`, edit in the token locally, then run the same workflow. See `secrets/README.md` for details.
 
 After the workflow is healthy, test self-heal drift manually:
 

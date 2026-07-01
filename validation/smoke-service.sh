@@ -15,6 +15,21 @@ cleanup() {
   "${kubectl_cmd[@]}" -n "$namespace" delete pod "$check_pod" --ignore-not-found --wait=false >/dev/null 2>&1 || true
 }
 
+cleanup_existing_check_pod() {
+  if ! "${kubectl_cmd[@]}" -n "$namespace" get pod "$check_pod" >/dev/null 2>&1; then
+    return
+  fi
+
+  echo "Removing stale smoke pod $check_pod in namespace $namespace"
+  if "${kubectl_cmd[@]}" -n "$namespace" delete pod "$check_pod" --ignore-not-found --wait=true --timeout=60s >/dev/null 2>&1; then
+    return
+  fi
+
+  echo "Stale smoke pod $check_pod did not delete cleanly; forcing removal" >&2
+  "${kubectl_cmd[@]}" -n "$namespace" delete pod "$check_pod" --ignore-not-found --force --grace-period=0 --wait=false >/dev/null 2>&1 || true
+  "${kubectl_cmd[@]}" -n "$namespace" wait --for=delete "pod/$check_pod" --timeout=30s >/dev/null 2>&1 || true
+}
+
 diagnostics() {
   status=$?
   if [ "$status" -eq 0 ]; then
@@ -36,7 +51,7 @@ trap cleanup EXIT
 trap diagnostics ERR
 
 "${kubectl_cmd[@]}" -n "$namespace" rollout status "deployment/$name" --timeout=90s
-cleanup
+cleanup_existing_check_pod
 "${kubectl_cmd[@]}" -n "$namespace" run "$check_pod" \
   --image=curlimages/curl:8.8.0 \
   --restart=Never \

@@ -4,6 +4,7 @@ set -euo pipefail
 context="${KUBE_CONTEXT:-kind-homelab-garden}"
 namespace="argocd"
 timeout_seconds="${ARGOCD_RECONCILE_TIMEOUT_SECONDS:-600}"
+repo_auth_grace_seconds="${ARGOCD_REPO_AUTH_GRACE_SECONDS:-90}"
 
 if [[ "${context}" != kind-* ]]; then
   cat >&2 <<EOF
@@ -22,9 +23,17 @@ app_field() {
   "${kubectl_cmd[@]}" -n "${namespace}" get application "${app}" -o "jsonpath=${field}" 2>/dev/null || true
 }
 
+repo_credentials_present() {
+  "${kubectl_cmd[@]}" -n "${namespace}" get secret -l argocd.argoproj.io/secret-type=repository --no-headers 2>/dev/null | grep -q . && return 0
+  "${kubectl_cmd[@]}" -n "${namespace}" get secret -l argocd.argoproj.io/secret-type=repo-creds --no-headers 2>/dev/null | grep -q .
+}
+
 wait_for_app() {
   local app="$1"
   local want_health="$2"
+  local auth_grace_deadline=$((SECONDS + repo_auth_grace_seconds))
+
+  "${kubectl_cmd[@]}" -n "${namespace}" annotate application "${app}" argocd.argoproj.io/refresh=hard --overwrite >/dev/null 2>&1 || true
 
   echo "Waiting for ArgoCD Application/${app} sync=Synced health=${want_health}"
   while (( SECONDS < deadline )); do
@@ -38,12 +47,39 @@ wait_for_app() {
       return 0
     fi
 
-    if [[ "${message}" =~ (authentication|required|Repository\ not\ found|failed\ to\ list\ refs|revision|app\ path|not\ found) ]]; then
+    if [[ "${message}" =~ (authentication|required|Repository\ not\ found|failed\ to\ list\ refs) ]]; then
+      if repo_credentials_present && (( SECONDS < auth_grace_deadline )); then
+        printf '  %s sync=%s health=%s repo auth condition still present; credentials exist, waiting for ArgoCD refresh\n' "${app}" "${sync:-unknown}" "${health:-unknown}"
+        sleep 10
+        continue
+      fi
+
       local repo revision
       repo="$(app_field "${app}" '{.spec.source.repoURL}')"
       revision="$(app_field "${app}" '{.spec.source.targetRevision}')"
       cat >&2 <<EOF
 Application/${app} cannot fetch or render its remote Git source:
+${message}
+
+Actual Application source:
+repoURL: ${repo:-unknown}
+targetRevision: ${revision:-unknown}
+
+ArgoCD runs inside the local cluster and fetches the configured remote HTTPS repo.
+If this is a private repo, provide local credentials with ARGOCD_GITHUB_TOKEN,
+GH_TOKEN, or ARGOCD_REPO_CREDS_FILE before rerunning this workflow. If credentials
+are already present, verify the token can read the repo and branch. Uncommitted
+local changes and unpushed commits are invisible to ArgoCD.
+EOF
+      return 1
+    fi
+
+    if [[ "${message}" =~ (revision|app\ path|not\ found) ]]; then
+      local repo revision
+      repo="$(app_field "${app}" '{.spec.source.repoURL}')"
+      revision="$(app_field "${app}" '{.spec.source.targetRevision}')"
+      cat >&2 <<EOF
+Application/${app} cannot render its remote Git source:
 ${message}
 
 Actual Application source:
