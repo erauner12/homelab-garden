@@ -1,6 +1,6 @@
 ## Context
 
-This change depends on `add-local-argocd-reconciliation-exercise` proving that the demo app can reconcile from Git in a disposable local ArgoCD exercise first. The first progressive delivery story should come after ArgoCD reconciliation works. The current schema validation path only renders standard platform and demo app overlays with strict kubeconform checks, so adding Rollouts CRs directly to default overlays could break the fast loop unless CRD-aware validation is added.
+This change depends on `add-local-argocd-reconciliation-exercise` proving that the demo app can reconcile from Git in a disposable local ArgoCD exercise first, and on `adopt-targeted-kustomize-composition` defining where optional Rollouts manifests live without polluting default validation paths. The first progressive delivery story should come after ArgoCD reconciliation works. The current schema validation path only renders standard platform and demo app overlays with strict kubeconform checks, so adding Rollouts CRs directly to default overlays could break the fast loop unless CRD-aware validation is added.
 
 ## Goals / Non-Goals
 
@@ -18,7 +18,7 @@ This change depends on `add-local-argocd-reconciliation-exercise` proving that t
 
 ## Decisions
 
-- Keep Rollouts manifests under `apps/demo-api/rollouts/` or scenario-specific paths rather than the default `apps/demo-api/overlays/local` path.
+- Keep Rollouts manifests under the app-owned Kustomize tree, such as `k8s/apps/workloads/demo-api/rollouts/` or scenario-specific paths, rather than the default local target path.
 - Add `validation/health.sh` in the same change so `failure-demo` has an explicit pass/fail signal.
 - Start with readiness/status-only checks; add demo API metrics before Prometheus in a later change.
 - Treat Rollouts as an optional exercise workflow, not part of `make check`.

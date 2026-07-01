@@ -2,7 +2,7 @@
 
 Garden's Terraform integration wraps Terraform and can expose stack outputs to Garden providers/actions, but Terraform remains the infrastructure lifecycle owner. The local `terraform-hcloud-talos` reference is a Terraform module for Kubernetes on Hetzner Cloud with Talos, kubeconfig/talosconfig outputs, and support for a small one-control-plane cluster shape. That makes it useful for a later real-infrastructure rehearsal lane, but too heavy for the default loop.
 
-This change depends on the earlier local validation and local ArgoCD exercise boundaries staying intact. It is a cloud integration lane, not part of `make check` or the first implementation wave.
+This change depends on the earlier local validation and local ArgoCD exercise boundaries staying intact, plus `adopt-targeted-kustomize-composition` defining a raw-Kustomize-safe `hcloud-lab` target or equivalent app overlays. It is a cloud integration lane, not part of `make check` or the first implementation wave.
 
 ## Goals / Non-Goals
 
@@ -10,7 +10,7 @@ This change depends on the earlier local validation and local ArgoCD exercise bo
 - Add a later optional `hcloud-lab` environment for disposable cloud-cluster reconciliation testing.
 - Use explicit Terraform plan/apply/destroy steps; do not create cloud resources as a side effect of default validation or reconciliation workflows.
 - Let Garden consume Terraform outputs for the cloud Kubernetes provider or workflow steps.
-- Run an ArgoCD reconciliation exercise against an ephemeral Hetzner cluster.
+- Run an ArgoCD reconciliation exercise against an ephemeral Hetzner cluster using the same target-composition pattern as the local exercise.
 - Keep cloud credentials, state, kubeconfigs, talosconfigs, and tfvars out of Git.
 
 **Non-Goals:**
@@ -27,6 +27,7 @@ This change depends on the earlier local validation and local ArgoCD exercise bo
 - Keep destroy explicit and documented, with any module-specific delete-protection sequence and post-destroy resource verification called out.
 - Start from the smallest supported non-HA cluster shape that can run the reconciliation demo, and document expected cost/lifetime before provisioning.
 - Scope ArgoCD installation and Application changes to the ephemeral hcloud cluster only.
+- Prefer `k8s/targets/hcloud-lab` or hcloud-specific app overlays as the ArgoCD source paths; they must remain raw-Kustomize-safe.
 
 ## Risks / Trade-offs
 

@@ -1,9 +1,10 @@
 ## 1. Rollouts Addon and Manifests
 
 - [ ] 1.1 Add `platform/addons/argo-rollouts/` resources or installer wrapper.
-- [ ] 1.2 Add `apps/demo-api/rollouts/canary.yaml` outside the default app overlay.
-- [ ] 1.3 Add `apps/demo-api/rollouts/analysis-template.yaml` or equivalent minimal analysis resource.
-- [ ] 1.4 Confirm default `make schema` does not validate Rollouts CRs without CRD-aware configuration.
+- [ ] 1.2 Add `k8s/apps/workloads/demo-api/rollouts/canary.yaml` or the equivalent app-owned Rollouts path outside the default local target.
+- [ ] 1.3 Add `k8s/apps/workloads/demo-api/rollouts/analysis-template.yaml` or equivalent minimal analysis resource.
+- [ ] 1.4 Confirm `adopt-targeted-kustomize-composition` keeps Rollouts CRs out of the default `local` target unless CRD-aware validation is added.
+- [ ] 1.5 Confirm default `make schema` does not validate Rollouts CRs without CRD-aware configuration.
 
 ## 2. Scenarios and Workflows
 

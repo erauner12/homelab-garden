@@ -21,6 +21,13 @@ The GitOps application graph SHALL reconcile the local platform desired state be
 - **WHEN** ArgoCD reconciles child Applications
 - **THEN** `platform-local` SHALL reconcile before `demo-api-local` so namespace and platform dependencies are explicit.
 
+### Requirement: ArgoCD sources are raw-Kustomize-safe
+ArgoCD Application source paths SHALL use raw-Kustomize-safe app overlays or target indexes defined by the targeted Kustomize composition.
+
+#### Scenario: Local ArgoCD Application is configured
+- **WHEN** implementation defines `platform-local` or `demo-api-local`
+- **THEN** each Application source path SHALL render with Kustomize alone and SHALL NOT require Garden `patchResources`, Garden template syntax, or shell-derived values.
+
 ### Requirement: Demo app self-heals live drift
 The demo app Application SHALL use automated sync with self-heal enabled and prune disabled for the first drift exercise.
 

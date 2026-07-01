@@ -39,6 +39,8 @@ The current seams are useful and should be extended rather than replaced:
 
 `homelab-k8s` should be referenced for proven patterns only: ArgoCD Application conventions in `homelab-k8s/docs/argocd/application-authoring.md:20-92`, multi-source ordering rationale in `homelab-k8s/docs/argocd/application-authoring.md:95-121`, and Kyverno test conventions in `homelab-k8s/policies/kyverno/README.md:207-260`.
 
+`kagent-garden` provides a useful Kustomize/Garden composition pattern to adapt at a smaller scale: manifests are owned by app/domain overlays, while `k8s/targets/<target>` acts as a thin non-owning composition index. For this repo, that pattern is valuable because Garden and ArgoCD can consume the same raw-Kustomize-safe desired-state paths for `local` and later `hcloud-lab` targets.
+
 ## Approach
 
 Keep Garden outside the delivery platform and Kubernetes controllers inside it:
@@ -47,7 +49,7 @@ Keep Garden outside the delivery platform and Kubernetes controllers inside it:
 | --- | --- |
 | Make | Stable local entrypoints: `doctor`, `kind-up`, `check`, `kind-status`, `kind-down`. |
 | Garden | Ordered local workflows and exercise harness. |
-| Kustomize | Desired-state rendering interface shared by Garden and ArgoCD. |
+| Kustomize | Desired-state rendering interface shared by Garden and ArgoCD; app-owned overlays plus thin target indexes should stay raw-Kustomize-safe. |
 | Contract tests | Repo-specific safety invariants that schemas cannot express. |
 | Kyverno | Policy-as-code checks locally first, admission guardrails later. |
 | ArgoCD | Production GitOps reconciler; only run locally here as a disposable reconciliation exercise when ArgoCD behavior is under test. |
@@ -59,10 +61,11 @@ The implementation order should protect the fast loop. Hard invariant: `make che
 
 1. `local-validate`: existing inner loop, kept fast.
 2. `policy-validate`: local Kyverno CLI checks against rendered fixtures.
-3. `local-argocd-reconcile`: disposable local ArgoCD exercise for app-of-apps, sync/health, ordering, drift, and self-heal behavior.
-4. `rollout-demo`: Argo Rollouts canary/analysis exercise using the smallest useful health signal.
-5. `failure-demo`: bad rollout pauses/aborts/rolls back.
-6. `investigate-demo`: read-only context collection and report rendering.
+3. `adopt-targeted-kustomize-composition`: introduce app-owned overlays and thin `k8s/targets/<target>` indexes so Garden and ArgoCD can share raw-Kustomize-safe desired-state paths.
+4. `local-argocd-reconcile`: disposable local ArgoCD exercise for app-of-apps, sync/health, ordering, drift, and self-heal behavior.
+5. `rollout-demo`: Argo Rollouts canary/analysis exercise using the smallest useful health signal.
+6. `failure-demo`: bad rollout pauses/aborts/rolls back.
+7. `investigate-demo`: read-only context collection and report rendering.
 
 The repo should remain an interview rehearsal system: each layer should answer one production delivery-platform question, and each workflow should have a short acceptance command plus a short explanation of what it proves.
 
@@ -154,7 +157,33 @@ Kyverno should be used in two stages:
 1. CLI checks in `policy-validate` / CI-style workflows.
 2. Admission enforcement only after the local policy suite is stable.
 
-### 4. Add a local ArgoCD reconciliation exercise
+### 4. Adopt targeted Kustomize composition
+
+Before ArgoCD or hcloud work depends on repo paths, adapt the useful part of the `kagent-garden` pattern in a smaller form.
+
+Target shape:
+
+```text
+k8s/apps/platform/.../base
+k8s/apps/platform/.../overlays/local
+k8s/apps/workloads/demo-api/base
+k8s/apps/workloads/demo-api/overlays/local
+k8s/targets/local/kustomization.yaml
+# later, when hcloud exists:
+k8s/targets/hcloud-lab/kustomization.yaml
+```
+
+Rules:
+
+- app/domain overlays own manifests;
+- `k8s/targets/<target>` is a thin composition index, not a resource owner;
+- ArgoCD source paths must be raw-Kustomize-safe;
+- Garden-only `patchResources`, template syntax, or shell-derived values must stay outside ArgoCD-owned source paths;
+- target identity (`local`, `hcloud-lab`) stays separate from cluster mechanism (`kind`, Hetzner/Terraform).
+
+Implement this as a minimal bridge first if a full move would slow down the first implementation slice. The first slice only needs to prove that Garden and ArgoCD can consume the same raw-Kustomize-safe desired-state roots; it should not become a broad directory migration.
+
+### 5. Add a local ArgoCD reconciliation exercise
 
 Implement the existing `docs/argocd-plan.md:5-19` path as an optional disposable local exercise, but keep it outside `local-validate`. Garden remains the pre-CD validation harness; ArgoCD owns real GitOps reconciliation after changes are pushed.
 
@@ -168,14 +197,14 @@ gitops/app-of-apps.yaml
 workflows/local-argocd-reconcile.garden.yml
 ```
 
-Start with app-of-apps managing two child applications:
+Start with app-of-apps managing two child applications sourced from the raw-Kustomize-safe composition paths introduced by `adopt-targeted-kustomize-composition`:
 
 ```text
-platform-local -> platform/overlays/local
-demo-api-local -> apps/demo-api/overlays/local
+platform-local -> k8s/apps/platform/.../overlays/local or the platform portion of k8s/targets/local
+demo-api-local -> k8s/apps/workloads/demo-api/overlays/local or the demo portion of k8s/targets/local
 ```
 
-Use the current remote branch first unless local no-push GitOps becomes valuable enough to justify in-cluster Gitea/Forgejo. That matches the simplicity recommendation in `docs/argocd-plan.md:17-23`. Platform must reconcile before the demo app so namespace/platform dependencies are explicit.
+Use the current remote branch first unless local no-push GitOps becomes valuable enough to justify in-cluster Gitea/Forgejo. That matches the simplicity recommendation in `docs/argocd-plan.md:17-23`. Platform must reconcile before the demo app so namespace/platform dependencies are explicit. Do not point ArgoCD at paths that require Garden `patchResources`, Garden variables, or shell-derived local state.
 
 Pin the first drift behavior: enable automated sync with self-heal for the demo app, keep prune disabled initially, and make the exercise demonstrate remediation of live drift. A later exercise can show manual sync or drift reporting if needed.
 
@@ -197,7 +226,7 @@ kubectl -n demo scale deploy demo-api --replicas=0
 
 The exercise is successful when the disposable local ArgoCD install detects the drift and self-heals the demo workload back to Git-declared desired state. This workflow must not deploy to, configure, or manage the real homelab ArgoCD installation.
 
-### 5. Add progressive delivery only after reconciliation works
+### 6. Add progressive delivery only after reconciliation works
 
 Add Argo Rollouts once ArgoCD can sync the app from Git. The first Rollouts exercise should be simple: one demo API rollout, one AnalysisTemplate, one success path, one failure path.
 
@@ -216,7 +245,7 @@ workflows/failure-demo.garden.yml
 
 Do not start with service mesh traffic shifting. The first objective is to explain progressive rollout state, analysis, pause/abort behavior, and rollback semantics.
 
-### 6. Add health gates as explicit signal policy
+### 7. Add health gates as explicit signal policy
 
 Health gates should distinguish automation-grade signals from diagnostic-only signals.
 
@@ -235,7 +264,7 @@ Example signal categories:
 - Automation-grade: readiness failure, crash loop, severe success-rate regression, severe p95 latency regression.
 - Diagnostic-only: isolated logs, one-off trace anomalies, low-volume error blips, unrelated dependency alerts.
 
-### 7. Add read-only investigation after the first failure demo
+### 8. Add read-only investigation after the first failure demo
 
 The first assistant-like workflow should collect context and render a report. It should not deploy, patch, scale, promote, or roll back.
 
@@ -252,7 +281,7 @@ Collected context should include Kubernetes workload state, recent events, ArgoC
 
 Principle: agent proposes; platform enforces.
 
-### 8. Defer tenant waves and `rolloutctl` until the first CD story works
+### 9. Defer tenant waves and `rolloutctl` until the first CD story works
 
 Tenant-wave generation is valuable, but it is a second story. Add it after one ArgoCD app, one Rollouts demo, and one failure investigation work end to end.
 
@@ -267,7 +296,7 @@ tools/rolloutctl/
 
 `rolloutctl` should first print and validate a rollout plan; writing desired-state changes can come next. Do not call GitHub APIs in the first version. Kargo remains later prior art.
 
-### 9. Add interview story docs as the final polish layer
+### 10. Add interview story docs as the final polish layer
 
 After workflows exist, add one concise `docs/interview/topic-map.md` first. Split it into separate story docs only when the commands exist and the single page gets too dense.
 

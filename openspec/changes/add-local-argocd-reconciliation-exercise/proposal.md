@@ -7,6 +7,7 @@ The repo has a placeholder GitOps plan but no executable reconciliation exercise
 - Add a separate `local-argocd-reconcile` workflow for a disposable local ArgoCD reconciliation exercise.
 - Install/apply ArgoCD only in the local kind cluster for the exercise.
 - Add app-of-apps with platform reconciliation before demo app reconciliation.
+- Use raw-Kustomize-safe source paths from the targeted Kustomize composition change.
 - Demonstrate live drift self-heal for the demo app.
 - Keep `make check` and `local-validate` unchanged.
 - Do not deploy to, configure, or manage the real homelab ArgoCD installation.

@@ -6,11 +6,13 @@
 
 ## 2. GitOps Applications
 
-- [ ] 2.1 Add `gitops/projects/` with a minimal lab AppProject.
-- [ ] 2.2 Add `gitops/applications/platform-local.yaml`.
-- [ ] 2.3 Add `gitops/applications/demo-api-local.yaml`.
-- [ ] 2.4 Add `gitops/app-of-apps.yaml` with platform before app ordering.
-- [ ] 2.5 Configure demo app automated sync and self-heal with prune disabled.
+- [ ] 2.1 Confirm `adopt-targeted-kustomize-composition` provides raw-Kustomize-safe source paths for platform and demo app desired state.
+- [ ] 2.2 Add `gitops/projects/` with a minimal lab AppProject.
+- [ ] 2.3 Add `gitops/applications/platform-local.yaml` pointing at a raw-Kustomize-safe platform overlay or target path.
+- [ ] 2.4 Add `gitops/applications/demo-api-local.yaml` pointing at a raw-Kustomize-safe demo app overlay or target path.
+- [ ] 2.5 Add `gitops/app-of-apps.yaml` with platform before app ordering.
+- [ ] 2.6 Configure demo app automated sync and self-heal with prune disabled.
+- [ ] 2.7 Verify each Application source path renders with Kustomize alone.
 
 ## 3. Workflow and Verification
 

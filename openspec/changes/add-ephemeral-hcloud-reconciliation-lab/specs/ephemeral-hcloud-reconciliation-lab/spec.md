@@ -56,6 +56,13 @@ The system SHALL provide an optional hcloud reconciliation workflow that verifie
 - **WHEN** a developer runs the hcloud reconciliation workflow after provisioning the hcloud lab cluster
 - **THEN** the workflow SHALL install or bootstrap ArgoCD only into the ephemeral Hetzner cluster, reconcile platform before demo app, and verify sync/health or drift/self-heal behavior.
 
+### Requirement: Hcloud target composition is raw-Kustomize-safe
+The hcloud reconciliation workflow SHALL use `k8s/targets/hcloud-lab` or hcloud-specific app overlays that render with raw Kustomize.
+
+#### Scenario: Hcloud ArgoCD Application is configured
+- **WHEN** implementation defines hcloud ArgoCD Applications
+- **THEN** each Application source path SHALL render with Kustomize alone and SHALL NOT require Garden `patchResources`, Garden template syntax, Terraform output interpolation, or shell-derived values.
+
 ### Requirement: Real homelab remains out of scope
 The hcloud lab SHALL NOT deploy to, configure, sync, or manage the real homelab ArgoCD installation.
 

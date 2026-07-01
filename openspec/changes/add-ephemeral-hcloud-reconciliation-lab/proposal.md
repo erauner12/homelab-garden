@@ -7,6 +7,7 @@ Local kind validation and the disposable local ArgoCD exercise prove Kubernetes 
 - Add an optional `hcloud-lab` cloud reconciliation lane backed by Terraform/OpenTofu and Hetzner Cloud.
 - Use Garden only as the orchestration harness for explicit Terraform plan/apply and post-provision validation workflows.
 - Reuse the same GitOps desired-state exercise against an ephemeral Hetzner cluster.
+- Use the targeted Kustomize composition pattern for `hcloud-lab` ArgoCD source paths.
 - Require explicit teardown documentation and keep all credentials, state, kubeconfig, talosconfig, and tfvars out of Git.
 - Keep `make check`, `local-validate`, `policy-validate`, and `local-argocd-reconcile` independent of the hcloud lane.
 
