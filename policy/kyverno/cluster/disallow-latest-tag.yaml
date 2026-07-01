@@ -1,0 +1,39 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+  annotations:
+    policies.kyverno.io/title: Disallow Latest Image Tag
+    policies.kyverno.io/category: Workload Safety
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Rejects Pods that use the mutable :latest image tag. Workloads should pin
+      explicit versions or digests so local validation and GitOps reconciliation
+      operate on repeatable deployment intent.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: disallow-latest-tag
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              operations:
+                - CREATE
+                - UPDATE
+      validate:
+        message: >-
+          Pod {{ request.object.metadata.name }} uses the mutable :latest image
+          tag. Pin an explicit version or digest before committing deployment
+          intent.
+        foreach:
+          - list: "request.object.spec.containers"
+            deny:
+              conditions:
+                any:
+                  - key: "{{ contains(element.image, ':latest') }}"
+                    operator: Equals
+                    value: true

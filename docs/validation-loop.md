@@ -29,6 +29,23 @@ render, schema validation pipes rendered standard Kubernetes resources through
 rules that Kubernetes schemas cannot express. That keeps the inner loop focused
 on components, not GitOps reconciliation.
 
+Policy-as-code checks are a separate optional loop:
+
+```bash
+make policy-validate
+```
+
+`make policy-validate` calls `garden workflow policy-validate --env local`,
+which runs the Garden exec test `policy-validation`, which invokes
+`validation/policy.sh` against local Kyverno fixtures. This loop requires the
+Kyverno CLI but not the Kyverno admission controller, and it is intentionally not
+part of `make check`.
+
+| Boundary | Owner |
+| --- | --- |
+| Repo labels, layers, namespace assumptions, Kustomize structure, and Service-to-Deployment selectors | Go contract tests |
+| Admission-style guardrails such as mutable image tags, probes, resource requirements, and privileged containers | Kyverno CLI policy tests |
+
 A future ArgoCD workflow can answer a different question:
 
 - do the ArgoCD `Application` resources point at the right desired state?

@@ -30,6 +30,15 @@ spec:
 apiVersion: garden.io/v0
 kind: Test
 type: exec
+name: policy-validation
+description: Run local Kyverno CLI policy tests against fixtures.
+spec:
+  command:
+    - ./validation/policy.sh
+---
+apiVersion: garden.io/v0
+kind: Test
+type: exec
 name: smoke-demo-api
 description: Verify the demo API deployment is available in the local cluster.
 dependencies:
