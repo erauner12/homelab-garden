@@ -8,6 +8,7 @@ bin/
 dist/
 tmp/
 .garden/
+reports/investigation/
 
 # secrets and local credentials
 *.sops.yaml
