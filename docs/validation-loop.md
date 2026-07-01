@@ -46,7 +46,7 @@ part of `make check`.
 | Repo labels, layers, namespace assumptions, Kustomize structure, and Service-to-Deployment selectors | Go contract tests |
 | Admission-style guardrails such as mutable image tags, probes, resource requirements, and privileged containers | Kyverno CLI policy tests |
 
-A future ArgoCD workflow can answer a different question:
+The separate `local-argocd-reconcile` workflow answers a different question:
 
 - do the ArgoCD `Application` resources point at the right desired state?
 - does app-of-apps wiring reconcile in the expected order?

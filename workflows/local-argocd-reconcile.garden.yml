@@ -1,0 +1,13 @@
+apiVersion: garden.io/v0
+kind: Workflow
+name: local-argocd-reconcile
+description: Install disposable local ArgoCD, apply app-of-apps, and verify reconciliation.
+steps:
+  - description: Install disposable ArgoCD in the local kind cluster and wait for readiness.
+    command: [run, local-argocd-install]
+  - description: Apply the local lab AppProject and parent app-of-apps Application.
+    command: [run, local-argocd-apply-app-of-apps]
+  - description: Wait for platform-local before demo-api-local reconciliation to be synced and healthy.
+    command: [run, local-argocd-wait-reconcile]
+  - description: Smoke-test the ArgoCD-reconciled demo API.
+    command: [run, local-argocd-smoke-demo-api]
