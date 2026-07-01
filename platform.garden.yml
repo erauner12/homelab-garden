@@ -6,8 +6,8 @@ description: Apply the minimal local platform layer through Kustomize.
 source:
   path: .
 include:
-  - platform/**
+  - k8s/apps/platform/foundation/**
 spec:
   kustomize:
-    path: platform/overlays/local
+    path: k8s/apps/platform/foundation/overlays/local
     version: 5

@@ -39,8 +39,8 @@ type object map[string]any
 
 func TestRenderedContracts(t *testing.T) {
 	var all []object
-	all = append(all, renderAndCheck(t, "platform/overlays/local", "platform")...)
-	all = append(all, renderAndCheck(t, "apps/demo-api/overlays/local", "app")...)
+	all = append(all, renderAndCheck(t, "k8s/apps/platform/foundation/overlays/local", "platform")...)
+	all = append(all, renderAndCheck(t, "k8s/apps/workloads/demo-api/overlays/local", "app")...)
 
 	checkNoMessages(t, validateRequiredNamespaces(all))
 	checkNoMessages(t, validateNamespaceBoundaries(all))

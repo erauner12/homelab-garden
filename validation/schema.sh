@@ -2,8 +2,9 @@
 set -euo pipefail
 
 for overlay in \
-  platform/overlays/local \
-  apps/demo-api/overlays/local
+  k8s/apps/platform/foundation/overlays/local \
+  k8s/apps/workloads/demo-api/overlays/local \
+  k8s/targets/local
 do
   echo "==> Schema validation: ${overlay}"
   kustomize build "${overlay}" | kubeconform -strict -summary
