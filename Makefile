@@ -1,4 +1,4 @@
-.PHONY: doctor kind-up kind-status static schema contracts local-validate check kind-down
+.PHONY: doctor kind-up kind-status static schema contracts local-validate policy-validate check kind-down
 
 doctor:
 	bash ./scripts/doctor.sh
@@ -20,6 +20,9 @@ contracts:
 
 local-validate:
 	garden workflow local-validate --env local
+
+policy-validate:
+	garden workflow policy-validate --env local
 
 check:
 	$(MAKE) doctor

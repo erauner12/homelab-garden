@@ -26,6 +26,7 @@ reserved for future GitOps reconciliation testing.
 ```text
 platform/       local platform resources rendered with Kustomize
 apps/           demo workloads rendered with Kustomize
+policy/         local policy-as-code checks and Kyverno CLI fixtures
 validation/     scripts used by Garden tests
 scripts/        local kind cluster helpers
 docs/           design notes and validation philosophy
@@ -41,6 +42,8 @@ Prerequisites for the local loop:
 - `kustomize` for rendering manifests
 - `kubeconform` for Kubernetes schema validation
 - `garden` for local workflow orchestration
+
+Optional policy validation also needs `kyverno` CLI.
 
 Check tool availability before running the full loop:
 
@@ -65,6 +68,25 @@ Go contract tests check repo-specific labels, layer/path boundaries, expected
 namespaces, workload safety, and Service-to-Deployment selectors. The workflow
 deploys `platform/overlays/local` and `apps/demo-api/overlays/local`, then
 smoke-tests the in-cluster service.
+
+## Optional Policy Validation
+
+Run local Kyverno CLI checks separately from the default loop:
+
+```bash
+make policy-validate
+```
+
+This invokes `garden workflow policy-validate --env local`, which runs the
+Garden exec test `policy-validation`, which invokes `validation/policy.sh`
+against fixtures in `policy/kyverno/tests`. Kyverno CLI is optional: `make check`
+does not install or require Kyverno.
+
+Ownership is split deliberately. Go contract tests own repo-specific rendered
+state invariants: labels, layer boundaries, namespace assumptions, Kustomize
+structure, and Service-to-Deployment selector matching. Kyverno policies own
+admission-style guardrails such as mutable image tags, probes, resource
+requirements, and privileged containers when admission parity is the point.
 
 ## Public Safety
 

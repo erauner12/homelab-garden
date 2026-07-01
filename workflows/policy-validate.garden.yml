@@ -1,0 +1,7 @@
+apiVersion: garden.io/v0
+kind: Workflow
+name: policy-validate
+description: Run optional local Kyverno CLI policy validation.
+steps:
+  - description: Run Kyverno policy tests.
+    command: [test, policy-validation]

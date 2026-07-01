@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: valid-pinned-tag
+  namespace: demo
+spec:
+  containers:
+    - name: app
+      image: ghcr.io/example/demo-api:v1.2.3
