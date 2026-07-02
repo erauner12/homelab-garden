@@ -102,6 +102,16 @@ ArgoCD should restore `Deployment/demo-api` to the Git-declared replica count. P
 
 See `docs/argocd-plan.md` for source paths, ordering, and limitations.
 
+## Optional Read-only Investigation
+
+Render a Markdown investigation report for `demo-api` without changing cluster state:
+
+```bash
+garden workflow investigate-demo --env local
+```
+
+The report includes environment, GitOps, rollout, workload, health, event, and log context. ArgoCD and Argo Rollouts are optional; if their CRDs are absent, the report marks them `not_installed` and continues. By default the report is written to stdout. To also save it locally, set `INVESTIGATION_REPORT_PATH`, for example `reports/investigation/$(date -u +%Y%m%dT%H%M%SZ)-demo-api.md`; generated reports are ignored by Git.
+
 ## Optional Policy Validation
 
 Run local Kyverno CLI checks separately from the default loop:

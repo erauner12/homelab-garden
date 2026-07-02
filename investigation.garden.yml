@@ -1,0 +1,12 @@
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: investigate-demo
+description: Render a read-only Markdown investigation report for demo-api.
+spec:
+  command:
+    - env
+    - KUBE_CONTEXT=${var.kubeContext}
+    - APP_NAMESPACE=${var.appNamespace}
+    - DEMO_APP_NAME=${var.demoAppName}
+    - ./validation/investigate-demo.sh
