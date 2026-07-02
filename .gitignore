@@ -23,10 +23,17 @@ secrets/*.local.yaml
 secrets/*.decrypted.yaml
 secrets/argocd-repo-creds.yaml
 
-# Terraform artifacts are not expected here, but keep the guardrails.
+# Terraform/OpenTofu and hcloud lab artifacts
+.terraform/
+**/.terraform/
 *.tfstate
 *.tfstate.*
 *.tfplan
 terraform.tfvars
 *.auto.tfvars
 !.tfvars.example
+infra/hcloud-lab/generated/
+infra/hcloud-lab/kubeconfig*
+infra/hcloud-lab/talosconfig*
+infra/hcloud-lab/*.secret
+infra/hcloud-lab/*.secrets

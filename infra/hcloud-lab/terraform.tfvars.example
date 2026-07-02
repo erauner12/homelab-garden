@@ -1,0 +1,28 @@
+# Copy to terraform.tfvars for local use; never commit the real file.
+# Keep all generated state, kubeconfig, talosconfig, and secrets out of Git.
+# Do not put hcloud_token here. Export TF_VAR_hcloud_token="$HCLOUD_TOKEN".
+
+cluster_name  = "homelab-garden-hcloud-lab"
+location_name = "fsn1"
+
+# Minimal non-HA module shape: one control plane plus one worker.
+# cax11 is ARM, so Terraform creates a Talos ARM snapshot with
+# hcloud-talos/imager by default for the talos_version below.
+control_plane_type = "cax11"
+worker_type        = "cax11"
+talos_version      = "v1.12.2"
+kubernetes_version = "1.35.0"
+
+# Default Image Factory schematic is vanilla (no custom extensions):
+# customization:
+# Override only if you need a different pre-uploaded schematic.
+# talos_image_factory_schematic_id = "376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba"
+
+# Optional: use an existing ARM snapshot ID instead of creating one with imager.
+# talos_image_id_arm = "123456"
+
+firewall_use_current_ip = true
+
+# local_sensitive_file writes these after apply. Keep under ./generated/.
+kubeconfig_path  = "./generated/kubeconfig"
+talosconfig_path = "./generated/talosconfig"
