@@ -54,23 +54,43 @@ infra/hcloud-lab/scripts/preflight.sh
 
 The preflight checks for `tofu` or `terraform`, `hcloud`, `talosctl`, `kubectl`, `HCLOUD_TOKEN`, and `TF_VAR_hcloud_token`. `TF_VAR_talos_image_id_arm` is only needed when intentionally using an existing snapshot override. It exits before any apply and does not mutate cloud resources.
 
-## Explicit lifecycle
+## Operator lifecycle scripts
+
+Shared script behavior lives in `infra/hcloud-lab/scripts/common.sh`: repo-root detection, Terraform/OpenTofu command selection, Hetzner token loading, and profile selection. Scripts never print the token. They use `HCLOUD_TOKEN` or `TF_VAR_hcloud_token` when already exported, otherwise they try `secrets/hcloud-lab.sops.yaml` with `SOPS_AGE_KEY_FILE` defaulting to `secrets/age/key.txt`.
+
+The default script profile is the live-tested x86/cx23 shape:
 
 ```bash
-cp infra/hcloud-lab/terraform.tfvars.example infra/hcloud-lab/terraform.tfvars
-$EDITOR infra/hcloud-lab/terraform.tfvars
-terraform -chdir=infra/hcloud-lab init
-terraform -chdir=infra/hcloud-lab plan -out=hcloud-lab.tfplan
+infra/hcloud-lab/scripts/create.sh
 ```
 
-Only apply if you intend to create paid, disposable cloud resources:
+That runs preflight, `init`, `plan`, and `apply`, then prints `KUBECONFIG` and inspection commands. To keep ARM available explicitly:
 
 ```bash
-terraform -chdir=infra/hcloud-lab apply hcloud-lab.tfplan
-terraform -chdir=infra/hcloud-lab destroy
+infra/hcloud-lab/scripts/create.sh --arm
+# or
+infra/hcloud-lab/scripts/create.sh --profile arm
 ```
 
-Equivalent `tofu -chdir=infra/hcloud-lab ...` commands may be used.
+Inspect the current lab without mutating resources:
+
+```bash
+infra/hcloud-lab/scripts/status.sh
+```
+
+`status.sh` prints Terraform state, hcloud inventory for the disposable lab label, and `kubectl get nodes/pods` when `infra/hcloud-lab/generated/kubeconfig` exists.
+
+Tear down only when you intend to remove paid disposable resources:
+
+```bash
+infra/hcloud-lab/scripts/destroy.sh
+# or, for non-interactive teardown:
+infra/hcloud-lab/scripts/destroy.sh --yes
+```
+
+`destroy.sh` requires typed confirmation unless `--yes` is supplied, runs Terraform/OpenTofu `destroy` with the selected profile/env, then prints remaining hcloud inventory for the lab label.
+
+Manual `tofu`/`terraform -chdir=infra/hcloud-lab ...` commands remain supported, but apply and destroy are explicit operator actions only. Keep Terraform `autoApply` disabled in Garden workflows.
 
 ## Generated sensitive files
 

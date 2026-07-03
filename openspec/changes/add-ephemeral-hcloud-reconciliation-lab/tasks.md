@@ -15,6 +15,7 @@
 - [x] 2.4 Keep `terraform.tfvars`, state, kubeconfig, talosconfig, and generated secrets out of Git.
 - [x] 2.5 Add a preflight path that fails before Terraform apply when required tools or credentials are missing.
 - [x] 2.6 Add explicit plan/apply/destroy documentation.
+- [x] 2.7 Add operator lifecycle scripts for validated x86/cx23 create, status inspection, and confirmed teardown.
 
 ## 3. Garden Environment and Workflow
 
