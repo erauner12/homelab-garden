@@ -10,7 +10,7 @@ This is an optional, explicit lane for a disposable Hetzner Cloud reconciliation
 | `hcloud-lab` | Optional, explicit, disposable cloud-cluster rehearsal. | Run by default, touch the real homelab, or create resources without an explicit Terraform/OpenTofu apply. |
 | `real homelab` | Existing production-ish homelab outside this lab. | Be deployed to, configured, synced, or managed by the hcloud lab workflow. |
 
-Terraform/OpenTofu owns the hcloud infrastructure lifecycle. Garden may later orchestrate explicit commands and consume Terraform outputs such as a kubeconfig path, but Garden is not the cloud resource owner and must not auto-apply infrastructure during normal validation or reconciliation.
+Terraform/OpenTofu owns the hcloud infrastructure lifecycle. Garden consumes the materialized kubeconfig at `infra/hcloud-lab/generated/kubeconfig` after an explicit apply, but Garden is not the cloud resource owner and must not auto-apply infrastructure during normal validation or reconciliation.
 
 ## Current stack shape
 
@@ -111,6 +111,27 @@ tofu -chdir=infra/hcloud-lab destroy
 
 Equivalent `terraform -chdir=infra/hcloud-lab ...` commands may be used when Terraform is the installed tool.
 
+## Garden reconciliation workflow
+
+After explicit provisioning, run the optional hcloud reconciliation lane with the Terraform-materialized kubeconfig:
+
+```bash
+KUBECONFIG=infra/hcloud-lab/generated/kubeconfig kubectl config get-contexts admin@homelab-garden-hcloud-lab
+garden workflow hcloud-argocd-reconcile --env hcloud-lab
+```
+
+`project.garden.yml` defines `hcloud-lab` with `kubeContext=admin@homelab-garden-hcloud-lab` and `kubeconfigPath=infra/hcloud-lab/generated/kubeconfig`. Garden does not initialize or apply Terraform for this reconciliation workflow; it consumes the kubeconfig path materialized by the explicit Terraform/OpenTofu lifecycle. No Garden Terraform `autoApply` behavior is configured.
+
+The hcloud ArgoCD scripts use `kubectl --kubeconfig infra/hcloud-lab/generated/kubeconfig --context admin@homelab-garden-hcloud-lab` and refuse any other kubeconfig path or context. That keeps the workflow pointed at the ephemeral hcloud cluster only, not local kind or the real homelab kubeconfig.
+
+The hcloud app-of-apps uses hcloud-specific Application names:
+
+- `app-of-apps-hcloud-lab`
+- `platform-hcloud-lab`
+- `demo-api-hcloud-lab`
+
+The child Applications source app-owned overlays directly (`k8s/apps/platform/foundation/overlays/local` and `k8s/apps/workloads/demo-api/overlays/local`) instead of pointing both Applications at `k8s/targets/hcloud-lab`. This preserves separate platform-before-demo sync waves and avoids two Applications managing the same target index. `k8s/targets/hcloud-lab` remains the raw-Kustomize-safe aggregate render/validation index for the same desired state.
+
 ## Teardown verification
 
 After destroy, verify no expected lab resources remain. Filter by the strict `homelab-garden-hcloud-lab` name prefix and disposable labels where the module exposes them. Also check the project for obvious leftovers with the hcloud CLI and Hetzner Console:
@@ -126,6 +147,6 @@ If local files are missing but Terraform state still exists, recover them with `
 
 ## Target composition status
 
-The archived `adopt-targeted-kustomize-composition` change defined the target strategy: app-owned overlays under `k8s/apps/**`, thin composition indexes under `k8s/targets/<target>`, and raw-Kustomize-safe ArgoCD source paths. It intentionally deferred `k8s/targets/hcloud-lab` until an hcloud reconciliation lane has a real target composition to source.
+The archived `adopt-targeted-kustomize-composition` change defined the target strategy: app-owned overlays under `k8s/apps/**`, thin composition indexes under `k8s/targets/<target>`, and raw-Kustomize-safe ArgoCD source paths.
 
-This foundation slice does not add hcloud ArgoCD Applications or `k8s/targets/hcloud-lab`. Add that target only with the real reconciliation workflow, and keep it a thin raw-Kustomize-safe index over app-owned hcloud overlays.
+`k8s/targets/hcloud-lab` is now present as a thin raw-Kustomize-safe index over the app-owned overlays selected for the hcloud lab. The hcloud ArgoCD child Applications use the app-owned overlays directly for independent sync/health checks, while the target index remains the aggregate validation entrypoint.

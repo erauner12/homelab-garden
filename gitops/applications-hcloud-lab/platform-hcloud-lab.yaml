@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-hcloud-lab
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: platform-hcloud-lab
+    app.kubernetes.io/part-of: homelab-garden
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: hcloud-lab
+  source:
+    repoURL: https://github.com/erauner12/homelab-garden.git
+    targetRevision: main
+    path: k8s/apps/platform/foundation/overlays/local
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform
+  syncPolicy:
+    automated:
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+  revisionHistoryLimit: 3

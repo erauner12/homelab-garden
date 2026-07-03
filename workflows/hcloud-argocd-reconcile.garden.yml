@@ -1,0 +1,13 @@
+apiVersion: garden.io/v0
+kind: Workflow
+name: hcloud-argocd-reconcile
+description: Install disposable hcloud ArgoCD, apply app-of-apps, and verify reconciliation without Terraform apply/destroy.
+steps:
+  - description: Install disposable ArgoCD in the ephemeral hcloud lab cluster and wait for readiness.
+    command: [run, hcloud-argocd-install]
+  - description: Apply the hcloud lab AppProject and parent app-of-apps Application.
+    command: [run, hcloud-argocd-apply-app-of-apps]
+  - description: Wait for platform-hcloud-lab before demo-api-hcloud-lab reconciliation to be synced and healthy.
+    command: [run, hcloud-argocd-wait-reconcile]
+  - description: Smoke-test the ArgoCD-reconciled demo API on hcloud.
+    command: [run, hcloud-argocd-smoke-demo-api]
