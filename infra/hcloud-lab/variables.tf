@@ -33,6 +33,17 @@ variable "kubernetes_version" {
   default     = "1.35.0"
 }
 
+variable "architecture" {
+  description = "Node/image architecture for the disposable lab. Use arm for cax* types or x86 for cx*/cpx*/ccx* types."
+  type        = string
+  default     = "arm"
+
+  validation {
+    condition     = contains(["arm", "x86"], var.architecture)
+    error_message = "architecture must be either arm or x86."
+  }
+}
+
 variable "control_plane_type" {
   description = "Minimal non-HA control-plane server type from the module README example."
   type        = string
@@ -59,6 +70,17 @@ variable "talos_image_id_arm" {
   validation {
     condition     = var.talos_image_id_arm == null || can(regex("^[0-9]+$", var.talos_image_id_arm))
     error_message = "talos_image_id_arm must be a numeric custom Talos ARM snapshot ID when set."
+  }
+}
+
+variable "talos_image_id_x86" {
+  description = "Optional existing x86 Talos snapshot ID override. Leave null to let Terraform create one with hcloud-talos/imager."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.talos_image_id_x86 == null || can(regex("^[0-9]+$", var.talos_image_id_x86))
+    error_message = "talos_image_id_x86 must be a numeric custom Talos x86 snapshot ID when set."
   }
 }
 

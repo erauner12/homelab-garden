@@ -8,8 +8,15 @@ location_name = "fsn1"
 # Minimal non-HA module shape: one control plane plus one worker.
 # cax11 is ARM, so Terraform creates a Talos ARM snapshot with
 # hcloud-talos/imager by default for the talos_version below.
+architecture       = "arm"
 control_plane_type = "cax11"
 worker_type        = "cax11"
+
+# If ARM placement is unavailable, switch to x86/cx23 consistently:
+# architecture             = "x86"
+# control_plane_type       = "cx23"
+# worker_type              = "cx23"
+# talos_imager_server_type = "cx23"
 talos_version      = "v1.12.2"
 kubernetes_version = "1.35.0"
 
@@ -18,8 +25,9 @@ kubernetes_version = "1.35.0"
 # Override only if you need a different pre-uploaded schematic.
 # talos_image_factory_schematic_id = "376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba"
 
-# Optional: use an existing ARM snapshot ID instead of creating one with imager.
+# Optional: use an existing snapshot ID instead of creating one with imager.
 # talos_image_id_arm = "123456"
+# talos_image_id_x86 = "123456"
 
 firewall_use_current_ip = true
 

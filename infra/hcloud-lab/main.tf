@@ -5,6 +5,7 @@ locals {
   }
 
   talos_image_url_arm = "https://factory.talos.dev/image/${var.talos_image_factory_schematic_id}/${var.talos_version}/hcloud-arm64.raw.xz"
+  talos_image_url_x86 = "https://factory.talos.dev/image/${var.talos_image_factory_schematic_id}/${var.talos_version}/hcloud-amd64.raw.xz"
 }
 
 provider "imager" {
@@ -12,13 +13,24 @@ provider "imager" {
 }
 
 resource "imager_image" "talos_arm" {
-  count = var.talos_image_id_arm == null ? 1 : 0
+  count = var.architecture == "arm" && var.talos_image_id_arm == null ? 1 : 0
 
   image_url    = local.talos_image_url_arm
   architecture = "arm"
   location     = var.location_name
   server_type  = var.talos_imager_server_type
   description  = "${var.cluster_name} Talos ${var.talos_version} ARM snapshot"
+  labels       = local.disposable_labels
+}
+
+resource "imager_image" "talos_x86" {
+  count = var.architecture == "x86" && var.talos_image_id_x86 == null ? 1 : 0
+
+  image_url    = local.talos_image_url_x86
+  architecture = "x86"
+  location     = var.location_name
+  server_type  = var.talos_imager_server_type
+  description  = "${var.cluster_name} Talos ${var.talos_version} x86 snapshot"
   labels       = local.disposable_labels
 }
 
@@ -40,12 +52,13 @@ module "talos" {
 
   firewall_use_current_ip = var.firewall_use_current_ip
 
-  # cax11 is ARM. Use a Terraform-managed custom Talos snapshot from
-  # hcloud-talos/imager unless an existing snapshot override is supplied.
-  disable_x86         = true
-  talos_image_id_arm  = coalesce(var.talos_image_id_arm, try(imager_image.talos_arm[0].image_id, null))
+  # Use a Terraform-managed custom Talos snapshot from hcloud-talos/imager
+  # unless an existing snapshot override is supplied for the selected architecture.
+  disable_x86         = var.architecture == "arm"
+  disable_arm         = var.architecture == "x86"
+  talos_image_id_arm  = var.architecture == "arm" ? coalesce(var.talos_image_id_arm, try(imager_image.talos_arm[0].image_id, null)) : null
   talos_iso_id_arm    = null
-  talos_image_id_x86  = null
+  talos_image_id_x86  = var.architecture == "x86" ? coalesce(var.talos_image_id_x86, try(imager_image.talos_x86[0].image_id, null)) : null
   talos_iso_id_x86    = null
   control_plane_nodes = [{ id = 1, type = var.control_plane_type, labels = local.disposable_labels }]
   worker_nodes        = [{ id = 1, type = var.worker_type, labels = local.disposable_labels }]
