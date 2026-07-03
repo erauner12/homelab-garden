@@ -26,7 +26,7 @@
 - [ ] 3.5 Reuse the local ArgoCD reconciliation shape against the ephemeral hcloud cluster.
 - [ ] 3.6 Use `k8s/targets/hcloud-lab` or hcloud-specific app overlays as raw-Kustomize-safe ArgoCD source paths.
 - [ ] 3.7 Choose hcloud-specific Application naming, such as `platform-hcloud-lab` and `demo-api-hcloud-lab`, to avoid ambiguity with local kind apps.
-- [ ] 3.8 Verify hcloud ArgoCD source paths render with Kustomize alone.
+- [x] 3.8 Verify hcloud ArgoCD source paths render with Kustomize alone.
 
 ## 4. Verification and Safety
 
