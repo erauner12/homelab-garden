@@ -34,16 +34,22 @@ copy of the larger `kagent-garden` domain tree.
 selected app-owned overlays, but it must not define copied Kubernetes resources
 itself.
 
-Today `k8s/targets/local` composes:
+Today `k8s/targets/local` and `k8s/targets/hcloud-lab` compose:
 
 ```text
 ../../apps/platform/foundation/overlays/local
 ../../apps/workloads/demo-api/overlays/local
 ```
 
+`hcloud-lab` is an explicit desired-state target identity for direct workload
+validation against the ephemeral Hetzner/Talos lab. It currently reuses the same
+app-owned overlays as `local`; future hcloud-specific behavior should move into
+app-owned hcloud overlays and keep the target as a thin composition index.
+
 Garden deploy actions still deploy the platform and demo overlays separately so
 the local smoke-test ordering stays explicit, while validation also renders the
-`local` target index to prove the composed desired state is raw-Kustomize-safe.
+`local` and `hcloud-lab` target indexes to prove the composed desired state is
+raw-Kustomize-safe.
 
 ## Raw Kustomize and ArgoCD safety
 
@@ -56,10 +62,10 @@ The local ArgoCD `Application` resources under `gitops/applications/` source
 these same app-owned overlays directly, so their configured source paths can be
 verified with raw `kustomize build` before ArgoCD is involved.
 
-## hcloud-lab deferral
+## hcloud-lab target identity
 
 `hcloud-lab` is a desired-state target identity, not the mechanism that creates
-or accesses a cluster. This change does not add `k8s/targets/hcloud-lab` because
-no hcloud reconciliation lane is implemented yet. Add it when that lane has a
-real target composition to source, keeping Terraform/Garden responsible for
-cluster lifecycle and access.
+or accesses a cluster. `k8s/targets/hcloud-lab` is a durable composition-only
+Kustomize target for hcloud direct workload validation. Terraform/Garden remain
+responsible for cluster lifecycle and access; the target only selects the
+app-owned desired-state overlays to render or apply.
