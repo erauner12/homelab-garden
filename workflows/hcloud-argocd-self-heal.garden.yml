@@ -1,0 +1,11 @@
+apiVersion: garden.io/v0
+kind: Workflow
+name: hcloud-argocd-self-heal
+description: Validate hcloud ArgoCD self-heal for demo-api without installing ArgoCD or touching Terraform/Hetzner lifecycle.
+steps:
+  - description: Verify the existing hcloud ArgoCD app graph is already synced and healthy.
+    command: [run, hcloud-argocd-wait-reconcile]
+  - description: Create safe demo-api drift and wait for ArgoCD self-heal.
+    command: [run, hcloud-argocd-self-heal-demo]
+  - description: Smoke-test the self-healed demo API on hcloud.
+    command: [run, hcloud-argocd-smoke-demo-api]

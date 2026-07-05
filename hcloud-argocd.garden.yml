@@ -52,3 +52,17 @@ spec:
     - KUBECONFIG=${var.kubeconfigPath}
     - KUBE_CONTEXT=${var.kubeContext}
     - ./validation/smoke-demo-api.sh
+---
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: hcloud-argocd-self-heal-demo
+description: Create safe demo-api drift on hcloud and wait for ArgoCD self-heal.
+environments: [hcloud-lab]
+spec:
+  command:
+    - env
+    - KUBECONFIG=${var.kubeconfigPath}
+    - KUBE_CONTEXT=${var.kubeContext}
+    - bash
+    - platform/addons/argocd/self-heal-hcloud-demo.sh

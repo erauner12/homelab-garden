@@ -102,6 +102,16 @@ ArgoCD should restore `Deployment/demo-api` to the Git-declared replica count. P
 
 See `docs/argocd-plan.md` for source paths, ordering, and limitations.
 
+## Optional Hcloud ArgoCD Self-Heal Validation
+
+After the ephemeral hcloud lab cluster has already been provisioned and `garden workflow hcloud-argocd-reconcile --env hcloud-lab` has succeeded, validate ArgoCD self-heal behavior without running Terraform or reinstalling ArgoCD:
+
+```bash
+ARGOCD_GITHUB_TOKEN="$(gh auth token)" garden workflow hcloud-argocd-self-heal --env hcloud-lab
+```
+
+The workflow reuses the hcloud kubeconfig/context guard, verifies `app-of-apps-hcloud-lab`, `platform-hcloud-lab`, and `demo-api-hcloud-lab` are Synced/Healthy, scales `deployment/demo-api` in namespace `demo` up by one replica, waits for ArgoCD to restore the reconciled replica count, then runs the existing demo API smoke test. It does not run Terraform apply/destroy, create/delete Hetzner resources, or target the real homelab.
+
 ## Optional Read-only Investigation
 
 Render a Markdown investigation report for `demo-api` without changing cluster state:
