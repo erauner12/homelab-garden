@@ -101,6 +101,28 @@ variable "firewall_use_current_ip" {
   default     = true
 }
 
+variable "firewall_kube_api_source" {
+  description = "Optional explicit CIDR source ranges for the public Kubernetes API firewall rule. Leave null to preserve firewall_use_current_ip behavior; set when runner egress rotates across a known NAT range."
+  type        = list(string)
+  default     = null
+
+  validation {
+    condition     = var.firewall_kube_api_source == null || alltrue([for cidr in var.firewall_kube_api_source : can(cidrhost(cidr, 0))])
+    error_message = "firewall_kube_api_source entries must be valid CIDR ranges, for example [\"203.0.113.0/29\"]."
+  }
+}
+
+variable "firewall_talos_api_source" {
+  description = "Optional explicit CIDR source ranges for the public Talos API firewall rule. Leave null to preserve firewall_use_current_ip behavior; set when runner egress rotates across a known NAT range."
+  type        = list(string)
+  default     = null
+
+  validation {
+    condition     = var.firewall_talos_api_source == null || alltrue([for cidr in var.firewall_talos_api_source : can(cidrhost(cidr, 0))])
+    error_message = "firewall_talos_api_source entries must be valid CIDR ranges, for example [\"203.0.113.0/29\"]."
+  }
+}
+
 variable "kubeconfig_path" {
   description = "Local path for the generated sensitive kubeconfig. Keep under ./generated/ and out of Git."
   type        = string

@@ -23,6 +23,7 @@ The configured demo shape is the module's minimal non-HA shape that is useful fo
 - `cax11` by default for both nodes;
 - `fsn1` by default;
 - `firewall_use_current_ip = true` by default so the public Kubernetes/Talos APIs are limited to the runner's current IP by module firewall rules;
+- optional explicit `firewall_kube_api_source` and `firewall_talos_api_source` CIDR lists for rotating runner egress/NAT pools, left null by default;
 - strict `homelab-garden-hcloud-lab` cluster-name prefix validation;
 - disposable node labels where the module supports node labels.
 
@@ -64,6 +65,8 @@ infra/hcloud-lab/scripts/preflight.sh
 ```
 
 If a required tool or `HCLOUD_TOKEN` is missing, preflight fails before any apply and reports the missing prerequisite. It does not mutate cloud resources.
+
+For runners with rotating public egress, the module's detected current-IP firewall rule can be too narrow for long Garden validations. In that case, set the smallest trusted CIDR range in both `firewall_kube_api_source` and `firewall_talos_api_source` in `terraform.tfvars` before an explicit plan/apply. Keep them null for the default current-IP behavior.
 
 ## Sensitive files
 
@@ -131,6 +134,8 @@ The hcloud app-of-apps uses hcloud-specific Application names:
 - `demo-api-hcloud-lab`
 
 The child Applications source app-owned overlays directly (`k8s/apps/platform/foundation/overlays/local` and `k8s/apps/workloads/demo-api/overlays/local`) instead of pointing both Applications at `k8s/targets/hcloud-lab`. This preserves separate platform-before-demo sync waves and avoids two Applications managing the same target index. `k8s/targets/hcloud-lab` remains the raw-Kustomize-safe aggregate render/validation index for the same desired state.
+
+After the hcloud ArgoCD baseline is healthy, `garden workflow hcloud-rollout-demo --env hcloud-lab` can validate Argo Rollouts on the ephemeral cluster. The workflow reuses the same guarded kubeconfig/context convention, installs Rollouts, applies an isolated good Rollout scenario in `hcloud-rollouts-demo`, smoke-tests it, then verifies the ArgoCD-managed `demo-api-hcloud-lab` baseline is still Synced/Healthy. It does not run Terraform/OpenTofu or replace the ArgoCD-managed `demo/demo-api` Deployment.
 
 ## Teardown verification
 

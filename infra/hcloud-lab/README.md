@@ -46,6 +46,19 @@ export TF_VAR_talos_image_id_x86=123456
 
 The module README warns that official Hetzner Talos ISOs can be stale or boot in the wrong mode, so this stack does not default to an official ISO ID.
 
+## API firewall sources
+
+By default, `firewall_use_current_ip = true` keeps the public Kubernetes and Talos API firewall rules limited to the operator or runner's detected current public IP.
+
+If a runner uses rotating public egress or a NAT pool, a long validation can lose API access when traffic leaves through a different IP. In that case, keep the lab scoped to the smallest known source CIDR range and set explicit API firewall sources, for example:
+
+```hcl
+firewall_kube_api_source  = ["203.0.113.0/29"] # documentation example only
+firewall_talos_api_source = ["203.0.113.0/29"] # documentation example only
+```
+
+Leave these variables unset/null unless the current-IP rule is too narrow for the environment. Do not widen to `0.0.0.0/0`; use the smallest CIDR that covers the trusted egress/NAT range.
+
 ## Safe preflight
 
 ```bash

@@ -112,6 +112,18 @@ ARGOCD_GITHUB_TOKEN="$(gh auth token)" garden workflow hcloud-argocd-self-heal -
 
 The workflow reuses the hcloud kubeconfig/context guard, verifies `app-of-apps-hcloud-lab`, `platform-hcloud-lab`, and `demo-api-hcloud-lab` are Synced/Healthy, scales `deployment/demo-api` in namespace `demo` up by one replica, waits for ArgoCD to restore the reconciled replica count, then runs the existing demo API smoke test. It does not run Terraform apply/destroy, create/delete Hetzner resources, or target the real homelab.
 
+## Optional Hcloud Progressive Delivery Validation
+
+After the ephemeral hcloud lab cluster has already been provisioned and the hcloud ArgoCD baseline is Synced/Healthy, validate Argo Rollouts on hcloud without changing Terraform or replacing the ArgoCD-managed demo Deployment:
+
+```bash
+garden workflow hcloud-rollout-demo --env hcloud-lab
+```
+
+The workflow reuses the hcloud kubeconfig/context guard, installs Argo Rollouts in the ephemeral cluster, applies a good Rollout scenario in the isolated `hcloud-rollouts-demo` namespace, waits for Rollout health, emits structured health output, smoke-tests the Rollout Service, then re-checks and smoke-tests the ArgoCD-managed `demo-api-hcloud-lab` demo. The hcloud Rollout scenario is intentionally separate from the `demo` namespace so it does not compete with the ArgoCD-managed `Deployment/demo-api`.
+
+Before merge, ArgoCD baseline validation still depends on the configured hcloud Applications being able to fetch their remote `targetRevision`; push the branch or run the baseline from `main` as appropriate. The isolated Rollout scenario itself is applied from the current checkout by Garden.
+
 ## Optional Read-only Investigation
 
 Render a Markdown investigation report for `demo-api` without changing cluster state:

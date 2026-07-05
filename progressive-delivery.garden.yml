@@ -61,3 +61,49 @@ spec:
     - sh
     - -c
     - kubectl --context ${var.kubeContext} create namespace demo --dry-run=client -o yaml | kubectl --context ${var.kubeContext} apply -f - && kustomize build scenarios/bad-image | kubectl --context ${var.kubeContext} apply -f - && sleep 20; KUBE_CONTEXT=${var.kubeContext} ./validation/health.sh || true
+---
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: hcloud-argo-rollouts-install
+description: Install Argo Rollouts CRDs/controller into the guarded ephemeral hcloud lab cluster.
+environments: [hcloud-lab]
+spec:
+  command:
+    - env
+    - KUBECONFIG=${var.kubeconfigPath}
+    - KUBE_CONTEXT=${var.kubeContext}
+    - bash
+    - platform/addons/argo-rollouts/install-hcloud.sh
+---
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: hcloud-rollout-demo-apply
+description: Apply the isolated good demo-api Rollout scenario to hcloud without touching the ArgoCD-managed demo namespace.
+environments: [hcloud-lab]
+dependencies:
+  - run.hcloud-argo-rollouts-install
+spec:
+  command:
+    - env
+    - KUBECONFIG=${var.kubeconfigPath}
+    - KUBE_CONTEXT=${var.kubeContext}
+    - bash
+    - platform/addons/argo-rollouts/apply-hcloud-good-rollout.sh
+---
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: hcloud-rollout-demo-status-smoke
+description: Wait for the isolated hcloud Rollout to become healthy, emit structured health output, and smoke-test its service.
+environments: [hcloud-lab]
+dependencies:
+  - run.hcloud-rollout-demo-apply
+spec:
+  command:
+    - env
+    - KUBECONFIG=${var.kubeconfigPath}
+    - KUBE_CONTEXT=${var.kubeContext}
+    - bash
+    - platform/addons/argo-rollouts/validate-hcloud-good-rollout.sh
