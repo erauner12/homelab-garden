@@ -14,10 +14,21 @@ environments:
     defaultNamespace: demo
     variables:
       kubeContext: kind-homelab-garden
+  - name: hcloud-lab
+    defaultNamespace: demo
+    variables:
+      kubeContext: admin@homelab-garden-hcloud-lab
+      # Materialized from infra/hcloud-lab Terraform/OpenTofu outputs after explicit apply.
+      kubeconfigPath: infra/hcloud-lab/generated/kubeconfig
 
 providers:
   - name: local-kubernetes
     environments: [local]
+    context: ${var.kubeContext}
+    setupIngressController: false
+  - name: kubernetes
+    environments: [hcloud-lab]
+    kubeconfig: ${var.kubeconfigPath}
     context: ${var.kubeContext}
     setupIngressController: false
 
@@ -28,6 +39,7 @@ scan:
     - validation.garden.yml
     - gitops-plan.garden.yml
     - local-argocd.garden.yml
+    - hcloud-argocd.garden.yml
     - progressive-delivery.garden.yml
     - investigation.garden.yml
     - workflows/*.garden.yml

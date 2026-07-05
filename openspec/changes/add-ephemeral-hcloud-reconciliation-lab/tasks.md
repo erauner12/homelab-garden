@@ -19,18 +19,18 @@
 
 ## 3. Garden Environment and Workflow
 
-- [ ] 3.1 Add an `hcloud-lab` Garden environment or config overlay.
-- [ ] 3.2 Configure Garden to consume Terraform outputs for the hcloud Kubernetes target.
-- [ ] 3.3 Keep Terraform `autoApply` disabled.
-- [ ] 3.4 Add `workflows/hcloud-argocd-reconcile.garden.yml` without embedding Terraform apply or destroy.
-- [ ] 3.5 Reuse the local ArgoCD reconciliation shape against the ephemeral hcloud cluster.
-- [ ] 3.6 Use `k8s/targets/hcloud-lab` or hcloud-specific app overlays as raw-Kustomize-safe ArgoCD source paths.
-- [ ] 3.7 Choose hcloud-specific Application naming, such as `platform-hcloud-lab` and `demo-api-hcloud-lab`, to avoid ambiguity with local kind apps.
+- [x] 3.1 Add an `hcloud-lab` Garden environment or config overlay.
+- [x] 3.2 Configure Garden to consume Terraform outputs for the hcloud Kubernetes target.
+- [x] 3.3 Keep Terraform `autoApply` disabled.
+- [x] 3.4 Add `workflows/hcloud-argocd-reconcile.garden.yml` without embedding Terraform apply or destroy.
+- [x] 3.5 Reuse the local ArgoCD reconciliation shape against the ephemeral hcloud cluster.
+- [x] 3.6 Use `k8s/targets/hcloud-lab` or hcloud-specific app overlays as raw-Kustomize-safe ArgoCD source paths.
+- [x] 3.7 Choose hcloud-specific Application naming, such as `platform-hcloud-lab` and `demo-api-hcloud-lab`, to avoid ambiguity with local kind apps.
 - [x] 3.8 Verify hcloud ArgoCD source paths render with Kustomize alone.
 
 ## 4. Verification and Safety
 
 - [x] 4.1 Verify default local workflows do not require hcloud credentials or Terraform state.
-- [ ] 4.2 Verify the hcloud workflow targets only the ephemeral cluster.
+- [x] 4.2 Verify the hcloud workflow targets only the ephemeral cluster.
 - [ ] 4.3 Verify teardown removes expected Hetzner resources with observable hcloud or Terraform checks.
 - [x] 4.4 Document cost, cleanup, maximum lifetime, and failure-recovery notes.

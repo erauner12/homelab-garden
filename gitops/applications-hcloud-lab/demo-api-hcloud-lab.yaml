@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demo-api-hcloud-lab
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: demo-api-hcloud-lab
+    app.kubernetes.io/part-of: homelab-garden
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: hcloud-lab
+  source:
+    repoURL: https://github.com/erauner12/homelab-garden.git
+    targetRevision: main
+    path: k8s/apps/workloads/demo-api/overlays/local
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo
+  syncPolicy:
+    automated:
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m
+  revisionHistoryLimit: 3

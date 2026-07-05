@@ -1,0 +1,54 @@
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: hcloud-argocd-install
+description: Install disposable ArgoCD into the ephemeral hcloud lab cluster and wait for controller readiness.
+environments: [hcloud-lab]
+spec:
+  command:
+    - env
+    - KUBECONFIG=${var.kubeconfigPath}
+    - KUBE_CONTEXT=${var.kubeContext}
+    - bash
+    - platform/addons/argocd/install-hcloud.sh
+---
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: hcloud-argocd-apply-app-of-apps
+description: Apply the hcloud lab AppProject and parent app-of-apps Application.
+environments: [hcloud-lab]
+spec:
+  command:
+    - env
+    - KUBECONFIG=${var.kubeconfigPath}
+    - KUBE_CONTEXT=${var.kubeContext}
+    - bash
+    - platform/addons/argocd/apply-hcloud-apps.sh
+---
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: hcloud-argocd-wait-reconcile
+description: Wait for app-of-apps-hcloud-lab, platform-hcloud-lab, and demo-api-hcloud-lab to become synced and healthy.
+environments: [hcloud-lab]
+spec:
+  command:
+    - env
+    - KUBECONFIG=${var.kubeconfigPath}
+    - KUBE_CONTEXT=${var.kubeContext}
+    - bash
+    - platform/addons/argocd/wait-hcloud-reconcile.sh
+---
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: hcloud-argocd-smoke-demo-api
+description: Smoke-test the demo API after hcloud ArgoCD, not Garden, reconciles it.
+environments: [hcloud-lab]
+spec:
+  command:
+    - env
+    - KUBECONFIG=${var.kubeconfigPath}
+    - KUBE_CONTEXT=${var.kubeContext}
+    - ./validation/smoke-demo-api.sh
