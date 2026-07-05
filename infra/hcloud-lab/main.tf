@@ -50,7 +50,9 @@ module "talos" {
   cluster_api_host_private = "kube.cluster.local"
   cluster_api_host         = "kube.${var.cluster_name}.invalid"
 
-  firewall_use_current_ip = var.firewall_use_current_ip
+  firewall_use_current_ip   = var.firewall_use_current_ip
+  firewall_kube_api_source  = var.firewall_kube_api_source
+  firewall_talos_api_source = var.firewall_talos_api_source
 
   # Use a Terraform-managed custom Talos snapshot from hcloud-talos/imager
   # unless an existing snapshot override is supplied for the selected architecture.

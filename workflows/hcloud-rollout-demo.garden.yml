@@ -1,0 +1,17 @@
+apiVersion: garden.io/v0
+kind: Workflow
+name: hcloud-rollout-demo
+description: Validate Argo Rollouts on the ephemeral hcloud lab cluster without Terraform lifecycle changes.
+steps:
+  - description: Verify the existing hcloud ArgoCD-managed baseline is synced and healthy before Rollouts validation.
+    command: [run, hcloud-argocd-wait-reconcile]
+  - description: Install Argo Rollouts into the guarded hcloud lab cluster.
+    command: [run, hcloud-argo-rollouts-install]
+  - description: Apply the isolated good Rollout scenario outside the ArgoCD-managed demo namespace.
+    command: [run, hcloud-rollout-demo-apply]
+  - description: Wait for Rollout health and smoke-test the isolated Rollout service.
+    command: [run, hcloud-rollout-demo-status-smoke]
+  - description: Re-check hcloud ArgoCD-managed apps after Rollouts validation.
+    command: [run, hcloud-argocd-wait-reconcile]
+  - description: Smoke-test the ArgoCD-managed demo API after Rollouts validation.
+    command: [run, hcloud-argocd-smoke-demo-api]

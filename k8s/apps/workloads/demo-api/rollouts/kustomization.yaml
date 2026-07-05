@@ -4,5 +4,6 @@ kind: Kustomization
 namespace: demo
 
 resources:
+  - analysis-rbac.yaml
   - analysis-template.yaml
   - canary.yaml

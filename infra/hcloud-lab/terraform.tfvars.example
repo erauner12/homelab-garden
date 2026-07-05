@@ -31,6 +31,12 @@ kubernetes_version = "1.35.0"
 
 firewall_use_current_ip = true
 
+# Optional: if your runner egress rotates across a known NAT range, set
+# explicit API source CIDRs so long hcloud validations keep access. Leave null
+# to preserve the default current-IP behavior.
+# firewall_kube_api_source  = ["203.0.113.0/29"] # documentation example only
+# firewall_talos_api_source = ["203.0.113.0/29"] # documentation example only
+
 # local_sensitive_file writes these after apply. Keep under ./generated/.
 kubeconfig_path  = "./generated/kubeconfig"
 talosconfig_path = "./generated/talosconfig"
