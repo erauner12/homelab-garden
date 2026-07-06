@@ -11,7 +11,6 @@ The demo API is a tiny standard-library HTTP service used only by this public la
 | `GET` | `/readyz` | `200 application/json` with `ready: true` | Kubernetes readiness and smoke readiness. |
 | `GET` | `/version` | `200 application/json` with app/version only | Diagnostic build identity. |
 | `GET` | `/metrics` | `200 text/plain; version=0.0.4` | Prometheus-compatible text for local inspection. |
-| `GET` | `/simulate` | Current mode JSON | Inspect mutable simulation state. |
 | `POST` | `/simulate?mode=<mode>` | Configure simulation mode | Controlled lab-only simulation. |
 | `POST` | `/simulate/reset` | Reset to healthy mode | Clear mutable simulation state. |
 
@@ -27,12 +26,6 @@ Simulation state is in-memory and scoped to the running demo API process. Restar
 | `degraded` | `POST /simulate?mode=degraded` | `/healthz` and `/readyz` stay successful but report degraded status; `/` returns a degraded text body. |
 | `failing` | `POST /simulate?mode=failing` | `/` returns `503`, `/healthz` returns `500`, and `/readyz` returns `503`; `/metrics` and simulation controls remain available for diagnosis/reset. |
 | `latency` | `POST /simulate?mode=latency&latency_ms=250` | Adds deterministic latency to `/`, `/healthz`, and `/readyz`. Latency is clamped to `0..2000` ms. |
-
-Reset examples:
-
-```bash
-curl -fsS -X POST http://demo-api.demo.svc.cluster.local/simulate/reset
-```
 
 ## Metrics
 

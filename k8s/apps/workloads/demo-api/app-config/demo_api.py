@@ -10,7 +10,6 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
-APP_NAME = "demo-api"
 DEFAULT_TEXT = "homelab-garden demo-api ok"
 VERSION = os.environ.get("DEMO_API_VERSION", "0.1.0")
 MAX_LATENCY_MS = 2000
@@ -79,8 +78,6 @@ def simulation_delay(state: AppState) -> None:
 
 def make_handler(state: AppState) -> type[BaseHTTPRequestHandler]:
     class DemoAPIHandler(BaseHTTPRequestHandler):
-        server_version = "demo-api/" + VERSION
-
         def do_GET(self) -> None:  # noqa: N802 - stdlib handler API
             self._handle("GET")
 
@@ -125,13 +122,10 @@ def make_handler(state: AppState) -> type[BaseHTTPRequestHandler]:
                 return 200, "application/json", json_body({"status": status, "ready": True, **state.snapshot()})
 
             if method == "GET" and path == "/version":
-                return 200, "application/json", json_body({"app": APP_NAME, "version": VERSION})
+                return 200, "application/json", json_body({"app": "demo-api", "version": VERSION})
 
             if method == "GET" and path == "/metrics":
                 return 200, "text/plain; version=0.0.4; charset=utf-8", state.metrics().encode("utf-8")
-
-            if method == "GET" and path == "/simulate":
-                return 200, "application/json", json_body(state.snapshot())
 
             if method == "POST" and path == "/simulate/reset":
                 return 200, "application/json", json_body({"status": "reset", **state.reset()})
