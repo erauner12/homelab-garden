@@ -14,14 +14,10 @@ environments:
     defaultNamespace: demo
     variables:
       kubeContext: kind-homelab-garden
-      riskReviewEnvironment: local
-      releaseIntentPath: release-intents/demo-api-local.json
   - name: hcloud-lab
     defaultNamespace: demo
     variables:
       kubeContext: admin@homelab-garden-hcloud-lab
-      riskReviewEnvironment: hcloud-lab
-      releaseIntentPath: release-intents/demo-api-hcloud-lab.json
       # Materialized from infra/hcloud-lab Terraform/OpenTofu outputs after explicit apply.
       kubeconfigPath: infra/hcloud-lab/generated/kubeconfig
 

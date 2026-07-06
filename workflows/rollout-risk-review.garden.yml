@@ -7,10 +7,6 @@ spec:
   command:
     - env
     - KUBE_CONTEXT=${var.kubeContext}
-    - RISK_REVIEW_ENVIRONMENT=${var.riskReviewEnvironment}
-    - RELEASE_INTENT_PATH=${var.releaseIntentPath}
-    - APP_NAMESPACE=${var.appNamespace}
-    - DEMO_APP_NAME=${var.demoAppName}
     - bash
     - ./validation/risk-review.sh
 ---
