@@ -19,10 +19,10 @@ The v2 health gate output SHALL include stable reason codes for every non-pass d
 - **THEN** the output SHALL include at least one reason code that explains the decision in a machine-readable form.
 
 ### Requirement: Health gate v2 includes evidence records
-The v2 health gate output SHALL include structured evidence records for evaluated inputs.
+The v2 health gate output SHALL include structured evidence records for evaluated automation inputs.
 
 #### Scenario: Evidence is recorded
-- **WHEN** the v2 health gate evaluates Kubernetes readiness, rollout status, demo API health, metrics, simulation state, logs, or events
+- **WHEN** the v2 health gate evaluates Kubernetes readiness, rollout status, demo API health/readiness, or target guard state
 - **THEN** the output SHALL record the signal name, source, observed value or summary, classification, and whether it contributed to the final decision.
 
 ### Requirement: Health gate v2 records environment and target guard outcome
@@ -33,8 +33,8 @@ The v2 health gate output SHALL include environment identity and target-guard ou
 - **THEN** it SHALL record the hcloud target-guard outcome and SHALL emit a non-pass decision if the disposable hcloud lab target cannot be verified.
 
 ### Requirement: Health gate v2 consumes demo API observability inputs
-The v2 health gate SHALL consume demo API observability inputs when the demo API observability surface is available.
+The v2 health gate SHALL consume demo API health and readiness inputs when the demo API observability surface is available.
 
-#### Scenario: Demo API reports degraded or failing simulation
-- **WHEN** demo API health, readiness, metrics, or simulation state reports degraded or failing behavior
-- **THEN** the v2 health gate SHALL include that evidence and SHALL NOT emit `decision: pass` for the target unless the degraded signal is explicitly classified as diagnostic-only.
+#### Scenario: Demo API reports degraded or failing behavior
+- **WHEN** demo API health or readiness reports degraded or failing behavior
+- **THEN** the v2 health gate SHALL include that evidence and SHALL NOT emit `decision: pass` for the target.
