@@ -1,4 +1,4 @@
-.PHONY: doctor kind-up kind-status static schema contracts local-validate policy-validate check kind-down
+.PHONY: doctor kind-up kind-status static schema contracts demo-api-test local-validate policy-validate check kind-down
 
 doctor:
 	bash ./scripts/doctor.sh
@@ -17,6 +17,9 @@ schema:
 
 contracts:
 	go test ./tests/contracts
+
+demo-api-test:
+	cd k8s/apps/workloads/demo-api && uv run pytest
 
 local-validate:
 	garden workflow local-validate --env local

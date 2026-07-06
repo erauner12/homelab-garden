@@ -18,27 +18,49 @@ spec:
         app.kubernetes.io/part-of: homelab-garden
         homelab-garden.io/layer: app
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: demo-api
-          image: hashicorp/http-echo:1.0
-          args:
-            - -listen=:8080
-            - -text=homelab-garden demo-api ok
+          image: python:3.12-alpine
+          command:
+            - python
+            - -B
+            - /app/demo_api.py
+          env:
+            - name: PORT
+              value: "8080"
+            - name: DEMO_API_VERSION
+              value: "0.1.0"
           ports:
             - name: http
               containerPort: 8080
           readinessProbe:
             httpGet:
-              path: /
+              path: /readyz
               port: http
             initialDelaySeconds: 2
             periodSeconds: 3
           livenessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: demo-api-app
+              mountPath: /app
+              readOnly: true
           resources:
             requests:
               cpu: 10m
@@ -46,3 +68,8 @@ spec:
             limits:
               cpu: 100m
               memory: 64Mi
+      volumes:
+        - name: demo-api-app
+          configMap:
+            name: demo-api-app
+
