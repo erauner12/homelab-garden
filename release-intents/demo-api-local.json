@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "homelab-garden.release-intent/v1alpha1",
+  "kind": "ReleaseIntent",
+  "metadata": {
+    "name": "demo-api-local"
+  },
+  "app": {
+    "id": "demo-api"
+  },
+  "environment": "local",
+  "git": {
+    "revision": "main"
+  },
+  "manifest": {
+    "path": "k8s/targets/local"
+  },
+  "image": {
+    "reference": "registry.example.invalid/demo-api:0.1.0@sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "identityMode": "digest"
+  },
+  "validationEvidence": [
+    {
+      "name": "static-render",
+      "type": "command",
+      "ref": "make static"
+    },
+    {
+      "name": "schema-check",
+      "type": "path",
+      "ref": "validation/schema.sh"
+    }
+  ],
+  "authority": {
+    "nonAuthoritative": true,
+    "mutatesCluster": false,
+    "createsPullRequests": false
+  }
+}

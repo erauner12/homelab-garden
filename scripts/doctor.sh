@@ -3,7 +3,7 @@ set -euo pipefail
 
 missing=()
 
-for tool in go kind kubectl kustomize kubeconform garden; do
+for tool in go python3 kind kubectl kustomize kubeconform garden; do
   if command -v "$tool" >/dev/null 2>&1; then
     printf 'ok: %s\n' "$tool"
   else
