@@ -10,6 +10,7 @@ tmp/
 .garden/
 reports/investigation/
 reports/risk-review/
+reports/tenant-wave/
 
 # Python/uv cache from local endpoint tests
 __pycache__/
