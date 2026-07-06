@@ -160,6 +160,7 @@ def self_test():
     assert failed["decision"] == "fail" and "no_ready_pods" in failed["reasons"]
     guarded = decide({**base, "environment": "hcloud-lab"})
     assert guarded["decision"] == "fail" and "target_guard_unverified" in guarded["reasons"]
+    assert guarded["target_guard"]["reason"] == "hcloud_context_mismatch"
     unknown = decide({**base, "ready_pods": None})
     assert unknown["decision"] == "unknown" and "ready_pods_unknown" in unknown["reasons"]
 

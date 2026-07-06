@@ -35,7 +35,7 @@ Current signals stay intentionally small: request count, 5xx error count, simple
 
 ## Health gate v2
 
-Health gate v2 consumes these endpoints only when `DEMO_API_BASE_URL` is set; only `decision: pass` is automation-safe.
+Health gate v2 consumes these endpoints only when `DEMO_API_BASE_URL` is set; only `decision: pass` is automation-safe. Metric-backed rollout analysis should consume `decision`, `reasons`, and automation-grade `evidence`, and progress automatically only on pass. Rollout risk review should display `decision`, `reasons`, `environment`, `target_guard`, and evidence; non-pass decisions block or require review.
 
 ## Safety and validation boundaries
 

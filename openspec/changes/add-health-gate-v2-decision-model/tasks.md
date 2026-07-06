@@ -13,10 +13,10 @@
 ## 3. Demo API Observability Integration
 
 - [x] 3.1 Integrate demo API health and readiness observability inputs after `add-demo-api-observability-surface` is implemented.
-- [ ] 3.2 Add fixtures for pass, fail, degraded, unknown, and ambiguous-target decisions.
+- [x] 3.2 Cover pass, fail, degraded, unknown, and ambiguous-target decisions in `validation/health.py --self-test`.
 - [x] 3.3 Document that only `decision: pass` is safe for automated progression.
 
 ## 4. Downstream Consumers
 
-- [ ] 4.1 Document how metric-backed rollout analysis will consume v2 health decisions.
-- [ ] 4.2 Document how rollout risk review will display v2 decisions, reason codes, and evidence.
+- [x] 4.1 Document how metric-backed rollout analysis will consume v2 health decisions.
+- [x] 4.2 Document how rollout risk review will display v2 decisions, reason codes, and evidence.
