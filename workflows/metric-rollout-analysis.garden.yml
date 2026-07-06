@@ -1,0 +1,17 @@
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: metric-rollout-analysis
+description: Render a read-only local metric rollout analysis report for demo-api.
+spec:
+  command:
+    - bash
+    - ./validation/metric-rollout-analysis.sh
+---
+apiVersion: garden.io/v0
+kind: Workflow
+name: metric-rollout-analysis
+description: Compose health, risk, wave, and optional demo API metrics into a read-only rollout decision.
+steps:
+  - description: Read local evidence JSON and optional DEMO_API_BASE_URL metrics, then render analysis.
+    command: [run, metric-rollout-analysis]

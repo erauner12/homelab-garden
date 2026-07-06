@@ -1,23 +1,24 @@
 ## Why
 
-The current progressive delivery demo can prove Rollouts behavior with Kubernetes-native health, but it does not yet show metric-backed analysis. After the demo API exposes metrics, the lab can add a small optional analysis path without making Prometheus a default dependency.
+The lab already has separate read-only health, risk, and tenant-wave evidence. It needs one local analyzer that composes those artifacts, optionally reads demo API `/metrics`, and renders a rollout decision without adding cluster-side analysis resources or mutation paths.
 
 ## What Changes
 
-- Add metric-backed Rollouts analysis for demo API canary or blue/green exercises.
-- Depend on the demo API metrics surface and health-gate v2 decision model.
-- Add Prometheus only when needed for the analysis path, and keep it optional and lab-scoped.
-- Keep metric analysis outside `make check` and separate from the real homelab.
+- Add a read-only local metric rollout analysis renderer.
+- Consume health gate v2 JSON, rollout risk review JSON, and tenant wave simulation JSON.
+- Optionally scrape demo API `/metrics` only when `DEMO_API_BASE_URL` is set.
+- Output JSON or Markdown with `decision: pass | review | block | unknown`, metric evidence, wave context, and reason codes.
+- Keep defaults local, diagnostic, and read-only.
 
 ## Capabilities
 
 ### New Capabilities
-- `metric-backed-rollout-analysis`: Defines optional Argo Rollouts analysis behavior backed by demo API metrics and an optional lightweight Prometheus path.
+- `metric-backed-rollout-analysis`: Defines local report-only rollout analysis backed by existing evidence artifacts and optional demo API metrics.
 
 ### Modified Capabilities
 
 ## Impact
 
-- Future implementation may add AnalysisTemplates, optional Prometheus manifests, workflow steps, and documentation for local and hcloud lab use.
-- Depends on `add-demo-api-observability-surface` and should consume `add-health-gate-v2-decision-model` results where appropriate.
-- Does not require service mesh, ingress traffic shifting, or real homelab integration.
+- Adds a focused Python renderer, a self-test Make target, optional Garden workflow wiring, and usage docs.
+- Does not add Prometheus, Rollouts `AnalysisTemplate`/`AnalysisRun`, ArgoCD sync, cluster mutation, cloud mutation, or PR generation.
+- Hcloud references are diagnostic context only when present in existing input evidence.

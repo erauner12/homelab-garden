@@ -11,6 +11,7 @@ tmp/
 reports/investigation/
 reports/risk-review/
 reports/tenant-wave/
+reports/metric-rollout/
 
 # Python/uv cache from local endpoint tests
 __pycache__/
