@@ -56,14 +56,10 @@ class AppState:
             f"demo_api_request_duration_seconds_count {self.duration_count}",
             f"demo_api_request_duration_seconds_sum {self.duration_sum:.6f}",
             "# TYPE demo_api_simulation_mode gauge",
+            "# TYPE demo_api_simulation_latency_ms gauge",
+            f"demo_api_simulation_latency_ms {self.latency_ms}",
         ]
         lines.extend(f'demo_api_simulation_mode{{mode="{mode}"}} {1 if mode == self.mode else 0}' for mode in MODES)
-        lines.extend(
-            [
-                "# TYPE demo_api_simulation_latency_ms gauge",
-                f"demo_api_simulation_latency_ms {self.latency_ms}",
-            ]
-        )
         return "\n".join(lines) + "\n"
 
 

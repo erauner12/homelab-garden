@@ -1,7 +1,6 @@
 import importlib.util
 import json
 import pathlib
-import sys
 import threading
 import time
 from http.server import HTTPServer
@@ -9,8 +8,6 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 import pytest
-
-sys.dont_write_bytecode = True
 
 APP_PATH = pathlib.Path(__file__).resolve().parents[1] / "app-config/demo_api.py"
 spec = importlib.util.spec_from_file_location("demo_api", APP_PATH)
