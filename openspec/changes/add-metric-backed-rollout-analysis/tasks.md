@@ -1,24 +1,24 @@
-## 1. Prerequisites
+## 1. Prerequisites and Artifacts
 
-- [ ] 1.1 Confirm `add-demo-api-observability-surface` has implemented the metrics required for analysis.
-- [ ] 1.2 Confirm `add-health-gate-v2-decision-model` has stable automation-grade decision output where workflows consume health decisions.
-- [ ] 1.3 Document required metrics, thresholds, sample windows, and failure simulation inputs.
+- [x] 1.1 Confirm demo API exposes `/metrics` for optional direct local scraping.
+- [x] 1.2 Confirm health gate v2, rollout risk review, and tenant wave simulation provide JSON evidence for composition.
+- [x] 1.3 Update proposal, design, and spec to the read-only local analyzer scope.
 
 ## 2. Analysis Implementation
 
-- [ ] 2.1 Add minimal AnalysisTemplate or AnalysisRun resources for the demo API metric query.
-- [ ] 2.2 Add an optional lightweight Prometheus path only if direct metric querying is insufficient.
-- [ ] 2.3 Keep Prometheus and metric analysis outside `make check` and default local validation.
-- [ ] 2.4 Add local workflow wiring for healthy and failing metric-backed rollout scenarios.
+- [x] 2.1 Add a focused local Python renderer for metric rollout analysis.
+- [x] 2.2 Consume health gate v2 JSON, rollout risk review JSON, tenant wave simulation JSON, and optional demo API `/metrics`.
+- [x] 2.3 Emit JSON or Markdown with `decision`, metric evidence, wave context, and reason codes.
+- [x] 2.4 Implement conservative decision rules where only explicit `pass` is automation-safe.
 
-## 3. Hcloud and Cleanup
+## 3. Read-only Wiring and Docs
 
-- [ ] 3.1 Add hcloud metric analysis support only behind the existing hcloud target guard.
-- [ ] 3.2 Document hcloud resource impact and cleanup for any optional metrics components.
-- [ ] 3.3 Verify the ArgoCD-managed demo remains healthy after metric analysis exercises.
+- [x] 3.1 Add a dedicated self-test Make target outside default `make check`.
+- [x] 3.2 Add optional thin Garden workflow wiring for local report rendering.
+- [x] 3.3 Document running, inputs, decision interpretation, and hcloud diagnostic-only boundary.
 
 ## 4. Verification
 
-- [ ] 4.1 Test healthy metric-backed rollout progression.
-- [ ] 4.2 Test failing metric-backed rollout stop, abort, or rollback behavior.
-- [ ] 4.3 Verify default validation does not require Prometheus or Rollouts analysis resources.
+- [x] 4.1 Run Python compile checks for new/touched Python.
+- [x] 4.2 Run analyzer self-test / Make target.
+- [x] 4.3 Run `openspec validate --all --strict`.

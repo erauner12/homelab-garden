@@ -1,4 +1,4 @@
-.PHONY: doctor kind-up kind-status release-intent risk-review tenant-wave-simulation static schema contracts demo-api-test local-validate policy-validate check kind-down
+.PHONY: doctor kind-up kind-status release-intent risk-review tenant-wave-simulation metric-rollout-analysis static schema contracts demo-api-test local-validate policy-validate check kind-down
 
 doctor:
 	bash ./scripts/doctor.sh
@@ -17,6 +17,9 @@ risk-review:
 
 tenant-wave-simulation:
 	python3 ./validation/tenant_wave_simulation.py --self-test
+
+metric-rollout-analysis:
+	python3 ./validation/metric_rollout_analysis.py --self-test
 
 static:
 	./validation/static.sh

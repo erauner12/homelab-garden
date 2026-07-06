@@ -1,29 +1,34 @@
 ## Context
 
-The existing progressive delivery capability intentionally avoids Prometheus and service mesh dependencies. This change comes later in the sequence: app metrics first, structured health decisions second, metric-backed Rollouts analysis third.
+The current delivery lab has three read-only evidence producers: health gate v2, rollout risk review, and tenant wave simulation. The requested metric-backed rollout analysis is not an Argo Rollouts AnalysisRun implementation; it is a local report renderer that combines these artifacts with optional demo API `/metrics` evidence.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Demonstrate Argo Rollouts AnalysisRun behavior using demo API metrics.
-- Keep Prometheus optional, minimal, and scoped to the lab environment using it.
-- Support local first, with hcloud usage only behind explicit hcloud lab guards.
-- Preserve Kubernetes-native health and smoke tests as the fallback path.
+- Render a local read-only rollout analysis decision: `pass`, `review`, `block`, or `unknown`.
+- Require health gate v2 JSON, rollout risk review JSON, and tenant wave simulation JSON as inputs.
+- Optionally scrape demo API `/metrics` when `DEMO_API_BASE_URL` is set.
+- Include metric evidence, wave context, and reason codes in JSON or Markdown output.
+- Make only explicit `pass` automation-safe.
 
 **Non-Goals:**
-- Do not add Prometheus to the default local validation path.
-- Do not require service mesh, ingress controllers, production traffic, or real homelab metrics.
-- Do not introduce a custom CRD/controller for delivery planning.
+- Do not add Prometheus or require a metrics server.
+- Do not add Rollouts `AnalysisTemplate` or `AnalysisRun` resources.
+- Do not sync ArgoCD, apply manifests, patch/scale/promote/abort Rollouts, generate PRs, or mutate clusters/cloud resources.
+- Do not make hcloud more than diagnostic context from existing guarded evidence.
 
 ## Decisions
 
-- Use demo API metrics as the source of truth for analysis queries; do not invent metrics in workflow scripts.
-- Add a minimal Prometheus installation only for workflows that actually need query execution, and document how to skip or clean it up.
-- Start with a small success-rate or error-rate query before adding latency SLOs or multi-window analysis.
-- Keep hcloud metric analysis opt-in and require the hcloud target guard before installing or querying metrics components.
+- Implement a focused Python renderer in `validation/metric_rollout_analysis.py` following existing validation renderers.
+- Accept evidence paths by CLI flags and environment variables.
+- Treat missing health/risk/wave input as `unknown`.
+- Treat risk review `block` as `block`.
+- Treat tenant wave non-eligibility as `review` unless the wave is blocked, then `block`.
+- Treat configured-but-unavailable metric scraping as `unknown`.
+- Keep the analyzer out of `make check`; expose a dedicated self-test target.
 
 ## Risks / Trade-offs
 
-- Prometheus can expand the lab footprint → keep it optional and isolated from `make check`.
-- Metric timing can make analysis flaky → define warmup/sample windows and use deterministic simulation modes.
-- Hcloud costs can increase → document resource impact and require teardown verification if Prometheus is installed there.
+- Saved evidence can be stale, so output includes evidence paths and reason codes for review.
+- Optional direct metric scraping can be unavailable, so configured scrape failures produce `unknown` rather than pass.
+- The analyzer is intentionally advisory; downstream automation must only continue on explicit `pass`.
