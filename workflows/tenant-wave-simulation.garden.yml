@@ -1,0 +1,17 @@
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: tenant-wave-simulation
+description: Render a read-only tenant wave simulation report for demo-api.
+spec:
+  command:
+    - python3
+    - ./validation/tenant_wave_simulation.py
+---
+apiVersion: garden.io/v0
+kind: Workflow
+name: tenant-wave-simulation
+description: Render a non-authoritative three-tenant wave simulation for demo-api.
+steps:
+  - description: Read release intent and optional risk review evidence, then render tenant wave simulation.
+    command: [run, tenant-wave-simulation]

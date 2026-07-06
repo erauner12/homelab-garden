@@ -28,7 +28,7 @@ k8s/apps/      app/domain-owned Kubernetes desired state
 k8s/targets/   thin target composition indexes over app-owned overlays
 policy/         local policy-as-code checks and Kyverno CLI fixtures
 release-intents/ public-safe release intent and artifact identity samples
-validation/     scripts used by Garden tests
+validation/     scripts used by Garden tests and read-only report renderers
 scripts/        local kind cluster helpers
 docs/           design notes and validation philosophy
 ```
@@ -152,6 +152,15 @@ garden workflow rollout-risk-review --env local
 ```
 
 Renders a read-only pre-rollout readiness JSON report; see [`docs/rollout-risk-review.md`](docs/rollout-risk-review.md).
+
+## Optional Tenant Wave Simulation
+
+```bash
+make tenant-wave-simulation
+garden workflow tenant-wave-simulation --env local
+```
+
+Renders a non-authoritative three-tenant wave simulation from release intent plus optional rollout risk review evidence. It does not generate PRs, sync ArgoCD, mutate clusters, run Terraform, or create a DeliveryPlan controller. See [`docs/tenant-wave-simulation.md`](docs/tenant-wave-simulation.md).
 
 ## Optional Policy Validation
 

@@ -1,4 +1,4 @@
-.PHONY: doctor kind-up kind-status release-intent risk-review static schema contracts demo-api-test local-validate policy-validate check kind-down
+.PHONY: doctor kind-up kind-status release-intent risk-review tenant-wave-simulation static schema contracts demo-api-test local-validate policy-validate check kind-down
 
 doctor:
 	bash ./scripts/doctor.sh
@@ -14,6 +14,9 @@ release-intent:
 
 risk-review:
 	python3 ./validation/risk_review.py --self-test
+
+tenant-wave-simulation:
+	python3 ./validation/tenant_wave_simulation.py --self-test
 
 static:
 	./validation/static.sh
@@ -37,6 +40,7 @@ check:
 	$(MAKE) doctor
 	$(MAKE) release-intent
 	$(MAKE) risk-review
+	$(MAKE) tenant-wave-simulation
 	$(MAKE) static
 	$(MAKE) schema
 	$(MAKE) contracts
