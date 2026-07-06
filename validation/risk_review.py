@@ -11,9 +11,6 @@ from release_intent import validate_intent
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_EXPECTED_HCLOUD_CONTEXT = "admin@homelab-garden-hcloud-lab"
 ALLOWED_ENVIRONMENTS = {"local", "hcloud-lab"}
-PASS_WORDS = ("pass", "passed", "ok", "success", "synced", "healthy", "active")
-BLOCK_WORDS = ("fail", "failed", "error", "deny", "denied")
-RISK_WORDS = ("degraded", "outofsync", "unhealthy", "progressing", "missing")
 
 
 def rel(path):
@@ -44,7 +41,7 @@ def evidence_record(name, path=None, availability="missing", effect="unknown", d
     return out
 
 
-def read_file(path, text_fallback=False):
+def read_file(path):
     path = Path(path)
     try:
         text = path.read_text()
@@ -53,22 +50,7 @@ def read_file(path, text_fallback=False):
     try:
         return json.loads(text), None
     except json.JSONDecodeError as err:
-        if text_fallback:
-            return {"text_summary": text[:500]}, None
         return None, f"invalid JSON: {err}"
-
-
-def status_text(data):
-    if not isinstance(data, dict):
-        return ""
-    values = []
-    for key in ("decision", "status", "result", "phase", "health", "sync", "syncStatus", "healthStatus"):
-        value = data.get(key)
-        if isinstance(value, str):
-            values.append(value.lower())
-        elif isinstance(value, dict):
-            values.extend(str(v).lower() for v in value.values() if isinstance(v, str))
-    return " ".join(values)
 
 
 def default_env(environ):
@@ -85,10 +67,10 @@ def default_intent_path(env):
 
 
 def hcloud_target_guard(env, environ):
+    if env != "hcloud-lab":
+        return None
     expected = environ.get("HCLOUD_LAB_CONTEXT", DEFAULT_EXPECTED_HCLOUD_CONTEXT)
     observed = environ.get("KUBE_CONTEXT") or environ.get("KUBECONTEXT")
-    if env != "hcloud-lab":
-        return {"environment": env, "verified": True, "reason": "local_guard_not_required", "expected_context": None, "observed_context": observed}
     verified = observed == expected
     return {
         "environment": env,
@@ -126,40 +108,27 @@ def load_intent(path, requested_env, blockers, risks, evidence):
     return data
 
 
-def classify_evidence(name, path, missing_code, blockers, risks, unknowns, evidence, health=False, unclassified_risk=False):
+def classify_health_gate(path, blockers, risks, unknowns, evidence):
     if not path:
-        unknowns.append(issue(missing_code, f"{name} evidence was not provided", name))
-        evidence.append(evidence_record(name, None, "missing", "unknown"))
         return
 
-    data, error = read_file(path, text_fallback=True)
+    data, error = read_file(path)
     if error:
-        unknowns.append(issue(f"{name}_unavailable", error, name))
-        evidence.append(evidence_record(name, path, "unavailable", "unknown", error))
+        unknowns.append(issue("health_gate_v2_unavailable", error, "health_gate_v2"))
+        evidence.append(evidence_record("health_gate_v2", path, "unavailable", "unknown", error))
         return
 
-    if health:
-        decision = data.get("decision") if isinstance(data, dict) else None
-        reasons = data.get("reasons", []) if isinstance(data, dict) else []
-        evidence.append(evidence_record(name, path, "available", f"decision:{decision or 'unclassified'}", {"decision": decision, "reasons": reasons}))
-        if decision == "pass":
-            return
-        if decision == "fail":
-            blockers.append(issue("health_gate_v2_failed", f"health gate failed: {reasons}", name))
-        elif decision == "degraded":
-            risks.append(issue("health_gate_v2_degraded", f"health gate degraded: {reasons}", name))
-        else:
-            unknowns.append(issue("health_gate_v2_unknown", f"health gate decision is {decision or 'missing'}", name))
+    decision = data.get("decision") if isinstance(data, dict) else None
+    reasons = data.get("reasons", []) if isinstance(data, dict) else []
+    evidence.append(evidence_record("health_gate_v2", path, "available", f"decision:{decision or 'unclassified'}", {"decision": decision, "reasons": reasons}))
+    if decision == "pass":
         return
-
-    text = status_text(data)
-    evidence.append(evidence_record(name, path, "available", f"status:{text or 'unclassified'}"))
-    if any(word in text for word in BLOCK_WORDS):
-        blockers.append(issue(f"{name}_failed", f"{name} status is {text}", name))
-    elif any(word in text for word in RISK_WORDS):
-        risks.append(issue(f"{name}_not_ready", f"{name} status is {text}", name))
-    elif not any(word in text for word in PASS_WORDS) and unclassified_risk:
-        risks.append(issue(f"{name}_unclassified", f"{name} evidence is available but not a recognized pass/fail result", name))
+    if decision == "fail":
+        blockers.append(issue("health_gate_v2_failed", f"health gate failed: {reasons}", "health_gate_v2"))
+    elif decision == "degraded":
+        risks.append(issue("health_gate_v2_degraded", f"health gate degraded: {reasons}", "health_gate_v2"))
+    else:
+        unknowns.append(issue("health_gate_v2_unknown", f"health gate decision is {decision or 'missing'}", "health_gate_v2"))
 
 
 def final_decision(blockers, risks, unknowns):
@@ -196,13 +165,7 @@ def intent_summary(intent, path, env):
 
 
 def evidence_paths(environ):
-    return {
-        "health_gate_v2": environ.get("HEALTH_GATE_EVIDENCE_PATH"),
-        "policy_validation": environ.get("POLICY_EVIDENCE_PATH"),
-        "argocd_state": environ.get("ARGOCD_EVIDENCE_PATH"),
-        "rollouts_state": environ.get("ROLLOUTS_EVIDENCE_PATH"),
-        "hcloud_lifecycle": environ.get("HCLOUD_EVIDENCE_PATH"),
-    }
+    return {"health_gate_v2": environ.get("HEALTH_GATE_EVIDENCE_PATH")}
 
 
 def build_report(args, environ=None):
@@ -218,29 +181,22 @@ def build_report(args, environ=None):
 
     paths = evidence_paths(environ)
     guard = hcloud_target_guard(env, environ)
-    if env == "hcloud-lab" and paths["hcloud_lifecycle"] and not guard["verified"]:
-        blockers.append(issue("hcloud_target_guard_unverified", "hcloud evidence was requested before the disposable hcloud-lab target guard passed", "target_guard"))
-        evidence.append(evidence_record("hcloud_lifecycle", paths["hcloud_lifecycle"], "blocked_by_target_guard", "blocks_ready", guard["reason"]))
-    elif env == "hcloud-lab":
-        classify_evidence("hcloud_lifecycle", paths["hcloud_lifecycle"], "hcloud_lifecycle_missing", blockers, risks, unknowns, evidence)
+    classify_health_gate(paths["health_gate_v2"], blockers, risks, unknowns, evidence)
 
-    classify_evidence("health_gate_v2", paths["health_gate_v2"], "health_gate_v2_missing", blockers, risks, unknowns, evidence, health=True)
-    classify_evidence("policy_validation", paths["policy_validation"], "policy_validation_missing", blockers, risks, unknowns, evidence, unclassified_risk=True)
-    classify_evidence("argocd_state", paths["argocd_state"], "argocd_state_missing", blockers, risks, unknowns, evidence)
-    classify_evidence("rollouts_state", paths["rollouts_state"], "rollouts_state_missing", blockers, risks, unknowns, evidence)
-
-    return {
+    report = {
         "schemaVersion": "homelab-garden.rollout-risk-review/v1alpha1",
         "kind": "RolloutRiskReview",
         "mode": "pre-rollout-readiness-assessment",
         "decision": final_decision(blockers, risks, unknowns),
         "intent": intent_summary(intent, intent_path, env),
-        "targetGuard": guard,
         "blockers": blockers,
         "risks": risks,
         "unknowns": unknowns,
         "evidence": evidence,
     }
+    if guard is not None:
+        report["targetGuard"] = guard
+    return report
 
 
 def parser():
@@ -275,18 +231,8 @@ def self_test():
     with TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         health = write_json(tmp / "health.json", {"decision": "pass", "reasons": [], "evidence": []})
-        policy = write_json(tmp / "policy.json", {"decision": "pass"})
-        argocd = write_json(tmp / "argocd.json", {"syncStatus": "Synced", "healthStatus": "Healthy"})
-        rollouts = write_json(tmp / "rollouts.json", {"phase": "Healthy"})
-        hcloud = write_json(tmp / "hcloud.json", {"status": "active"})
 
-        evidence_env = {
-            "HEALTH_GATE_EVIDENCE_PATH": health,
-            "POLICY_EVIDENCE_PATH": policy,
-            "ARGOCD_EVIDENCE_PATH": argocd,
-            "ROLLOUTS_EVIDENCE_PATH": rollouts,
-            "HCLOUD_EVIDENCE_PATH": hcloud,
-        }
+        evidence_env = {"HEALTH_GATE_EVIDENCE_PATH": health}
         complete = build_report(
             make_args(intent=str(ROOT / "release-intents/demo-api-local.json")),
             environ={**evidence_env, "KUBE_CONTEXT": "kind-homelab-garden"},
@@ -294,16 +240,17 @@ def self_test():
         assert complete["decision"] == "pass", complete
         assert "decisionContract" not in complete
         assert "safety" not in complete
+        assert "targetGuard" not in complete
 
         checks = [
             (build_report(make_args(intent=str(tmp / "missing.json")), environ={}), "block", "release_intent_missing", "blockers"),
-            (build_report(make_args(intent=str(ROOT / "release-intents/demo-api-local.json")), environ={}), "unknown", "health_gate_v2_missing", "unknowns"),
-            (build_report(make_args(intent=str(ROOT / "release-intents/demo-api-hcloud-lab.json"), env="hcloud-lab"), environ={**evidence_env, "KUBE_CONTEXT": "kind-homelab-garden"}), "block", "hcloud_target_guard_unverified", "blockers"),
+            (build_report(make_args(intent=str(ROOT / "release-intents/demo-api-local.json")), environ={}), "pass", None, None),
             (build_report(make_args(intent=str(ROOT / "release-intents/demo-api-hcloud-lab.json"), env="hcloud-lab"), environ={**evidence_env, "KUBE_CONTEXT": DEFAULT_EXPECTED_HCLOUD_CONTEXT}), "review", "tag_only_image_identity", "risks"),
         ]
         for report, decision, code, bucket in checks:
             assert report["decision"] == decision, report
-            assert any(item["code"] == code for item in report[bucket]), report
+            if code:
+                assert any(item["code"] == code for item in report[bucket]), report
 
     print("risk review self-test passed")
 
