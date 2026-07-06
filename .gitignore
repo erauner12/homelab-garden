@@ -10,6 +10,12 @@ tmp/
 .garden/
 reports/investigation/
 
+# Python/uv cache from local endpoint tests
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
 # secrets and local credentials
 *.sops.yaml
 !.sops.yaml

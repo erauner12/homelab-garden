@@ -37,6 +37,7 @@ docs/           design notes and validation philosophy
 Prerequisites for the local loop:
 
 - `go` for contract tests
+- `uv` for demo API Python endpoint tests
 - `kind` for the local Kubernetes cluster
 - `kubectl` for cluster inspection
 - `kustomize` for rendering manifests
@@ -65,11 +66,15 @@ static render validation, Kubernetes schema validation, Go contract tests,
 partial Garden config resolution, and the local Garden validation workflow.
 Static validation checks that each Kustomize entrypoint renders. Schema validation pipes the rendered YAML through `kubeconform -strict -summary`.
 Go contract tests check repo-specific labels, layer/path boundaries, expected
-namespaces, workload safety, and Service-to-Deployment selectors. The workflow
+namespaces, workload safety, and Service-to-Deployment selectors. The demo API
+Python endpoint tests are uv-managed and can be run with `make demo-api-test`.
+The workflow
 deploys `k8s/apps/platform/foundation/overlays/local` and
 `k8s/apps/workloads/demo-api/overlays/local`, while static/schema validation
 also renders `k8s/targets/local`. The workflow then smoke-tests the in-cluster
-services.
+services. The demo API also exposes stable `/healthz`, `/readyz`, `/version`,
+`/metrics`, and lab-only simulation endpoints; see
+[`docs/demo-api-observability.md`](docs/demo-api-observability.md).
 
 ## Optional Local ArgoCD Reconciliation
 

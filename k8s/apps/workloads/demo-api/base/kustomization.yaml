@@ -6,3 +6,7 @@ namespace: demo
 resources:
   - deployment.yaml
   - service.yaml
+
+components:
+  - ../app-config
+

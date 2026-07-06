@@ -10,6 +10,9 @@ expected_text="${SMOKE_EXPECTED_TEXT:?SMOKE_EXPECTED_TEXT is required}"
 context="${KUBECONTEXT:-${KUBE_CONTEXT:-kind-homelab-garden}}"
 url="${SMOKE_URL:-http://${name}.${namespace}.svc.cluster.local}"
 label="${SMOKE_LABEL:-$namespace}"
+health_path="${SMOKE_HEALTH_PATH:-}"
+ready_path="${SMOKE_READY_PATH:-}"
+metrics_path="${SMOKE_METRICS_PATH:-}"
 check_pod=""
 
 kubectl_cmd=(kubectl --context "$context")
@@ -45,5 +48,17 @@ check_pod="$(create_smoke_pod "$namespace")"
 "${kubectl_cmd[@]}" -n "$namespace" wait --for=condition=Ready "pod/$check_pod" --timeout=60s
 
 "${kubectl_cmd[@]}" -n "$namespace" exec "$check_pod" -- curl -fsS "$url" | grep -q "$expected_text"
+
+if [[ -n "$health_path" ]]; then
+  "${kubectl_cmd[@]}" -n "$namespace" exec "$check_pod" -- curl -fsS "$url$health_path" | grep -q '"healthy": true'
+fi
+
+if [[ -n "$ready_path" ]]; then
+  "${kubectl_cmd[@]}" -n "$namespace" exec "$check_pod" -- curl -fsS "$url$ready_path" | grep -q '"ready": true'
+fi
+
+if [[ -n "$metrics_path" ]]; then
+  "${kubectl_cmd[@]}" -n "$namespace" exec "$check_pod" -- curl -fsS "$url$metrics_path" | grep -q 'demo_api_requests_total'
+fi
 
 echo "Smoke check passed for $name"
