@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "homelab-garden.release-intent/v1alpha1",
+  "kind": "ReleaseIntent",
+  "metadata": {
+    "name": "demo-api-hcloud-lab"
+  },
+  "app": {
+    "id": "demo-api"
+  },
+  "environment": "hcloud-lab",
+  "git": {
+    "revision": "main"
+  },
+  "manifest": {
+    "path": "k8s/targets/hcloud-lab"
+  },
+  "image": {
+    "reference": "registry.example.invalid/demo-api:0.1.0",
+    "identityMode": "tag",
+    "risk": "Tag-only identity is mutable; risk review must treat the image as less certain than a digest-pinned artifact."
+  },
+  "validationEvidence": [
+    "k8s/targets/hcloud-lab",
+    "docs/architecture/cloud-reconciliation-lab.md"
+  ],
+  "authority": "read-only"
+}

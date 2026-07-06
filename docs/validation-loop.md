@@ -21,9 +21,10 @@ make kind-status
 make kind-down
 ```
 
-`make check` runs static render validation, Kubernetes schema validation,
-Go contract tests, Garden config resolution, Garden deploys, and the
-in-cluster smoke check. Static validation proves the app-owned overlays and `k8s/targets/local`
+`make check` validates release intent samples in `release-intents/`.
+It also runs static render validation, Kubernetes schema validation, Go contract
+tests, Garden config resolution, Garden deploys, and the in-cluster smoke check.
+Static validation proves the app-owned overlays and `k8s/targets/local`
 composition index render, schema validation pipes rendered standard Kubernetes
 resources through `kubeconform -strict -summary`, and Go contracts enforce
 repo-specific delivery rules that Kubernetes schemas cannot express. That keeps

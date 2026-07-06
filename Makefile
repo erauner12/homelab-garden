@@ -1,4 +1,4 @@
-.PHONY: doctor kind-up kind-status static schema contracts demo-api-test local-validate policy-validate check kind-down
+.PHONY: doctor kind-up kind-status release-intent static schema contracts demo-api-test local-validate policy-validate check kind-down
 
 doctor:
 	bash ./scripts/doctor.sh
@@ -8,6 +8,9 @@ kind-up:
 
 kind-status:
 	./scripts/kind-status.sh
+
+release-intent:
+	python3 ./validation/release_intent.py
 
 static:
 	./validation/static.sh
@@ -29,6 +32,7 @@ policy-validate:
 
 check:
 	$(MAKE) doctor
+	$(MAKE) release-intent
 	$(MAKE) static
 	$(MAKE) schema
 	$(MAKE) contracts

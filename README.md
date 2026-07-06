@@ -27,6 +27,7 @@ reserved for opt-in GitOps reconciliation testing.
 k8s/apps/      app/domain-owned Kubernetes desired state
 k8s/targets/   thin target composition indexes over app-owned overlays
 policy/         local policy-as-code checks and Kyverno CLI fixtures
+release-intents/ public-safe release intent and artifact identity samples
 validation/     scripts used by Garden tests
 scripts/        local kind cluster helpers
 docs/           design notes and validation philosophy
@@ -62,9 +63,10 @@ make kind-down
 ```
 
 The local environment defaults to `kind-homelab-garden`. `make check` runs
-static render validation, Kubernetes schema validation, Go contract tests,
-partial Garden config resolution, and the local Garden validation workflow.
-Static validation checks that each Kustomize entrypoint renders. Schema validation pipes the rendered YAML through `kubeconform -strict -summary`.
+the repository validators, Go contract tests, partial Garden config resolution,
+and the local Garden validation workflow. Static validation checks that each
+Kustomize entrypoint renders. Schema validation pipes the rendered YAML through
+`kubeconform -strict -summary`.
 Go contract tests check repo-specific labels, layer/path boundaries, expected
 namespaces, workload safety, and Service-to-Deployment selectors. The demo API
 Python endpoint tests are uv-managed and can be run with `make demo-api-test`.
@@ -75,6 +77,10 @@ also renders `k8s/targets/local`. The workflow then smoke-tests the in-cluster
 services. The demo API also exposes stable `/healthz`, `/readyz`, `/version`,
 `/metrics`, and lab-only simulation endpoints; see
 [`docs/demo-api-observability.md`](docs/demo-api-observability.md).
+
+## Release Intent Samples
+
+See [`docs/release-intent.md`](docs/release-intent.md) for the public-safe `demo-api` samples in `release-intents/`.
 
 ## Optional Local ArgoCD Reconciliation
 
