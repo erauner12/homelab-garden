@@ -32,20 +32,13 @@ Reset examples:
 
 ```bash
 curl -fsS -X POST http://demo-api.demo.svc.cluster.local/simulate/reset
-curl -fsS -X POST 'http://demo-api.demo.svc.cluster.local/simulate?mode=reset'
 ```
 
 ## Metrics
 
 `/metrics` uses Prometheus-compatible text so it is machine-readable without requiring a Prometheus server in this change.
 
-Current signals:
-
-- `demo_api_requests_total{method,path,code}` counter
-- `demo_api_errors_total` counter for HTTP 5xx responses
-- `demo_api_request_duration_seconds` histogram
-- `demo_api_simulation_mode{mode}` gauge where the active mode is `1`
-- `demo_api_simulation_latency_ms` gauge
+Current signals stay intentionally small: request count, 5xx error count, simple request-duration summary, active simulation mode, and configured latency.
 
 ## Future health-gate signal candidates
 
@@ -53,9 +46,9 @@ Automation-grade candidates for later health-gate v2 or metric-backed Rollouts w
 
 - `/readyz` success/failure and JSON `ready` value
 - `/healthz` success/failure and JSON `healthy` value
-- `demo_api_errors_total` rate over a bounded window
-- `demo_api_request_duration_seconds` bucket distribution over a bounded window
-- `demo_api_simulation_mode` and `demo_api_simulation_latency_ms` when a workflow intentionally enables simulation
+- error rate over a bounded window
+- request-duration trend over a bounded window
+- active simulation mode and configured latency when a workflow intentionally enables simulation
 
 Diagnostic-only signals for now:
 
