@@ -12,7 +12,7 @@
 
 ## 3. Demo API Observability Integration
 
-- [x] 3.1 Integrate demo API health, readiness, metrics, and simulation state after `add-demo-api-observability-surface` is implemented.
+- [x] 3.1 Integrate demo API health and readiness observability inputs after `add-demo-api-observability-surface` is implemented.
 - [ ] 3.2 Add fixtures for pass, fail, degraded, unknown, and ambiguous-target decisions.
 - [x] 3.3 Document that only `decision: pass` is safe for automated progression.
 

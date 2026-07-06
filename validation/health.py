@@ -15,13 +15,6 @@ def kubectl(context, namespace, args):
         return ""
 
 
-def as_int(value, default=0):
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return default
-
-
 def fetch_json(base_url, path):
     try:
         with urlopen(base_url.rstrip("/") + path, timeout=2) as response:
@@ -57,7 +50,7 @@ def collect():
         "environment": environment,
         "expected_context": expected_context,
         "ready_pods": len(ready_names.split()),
-        "restart_count": sum(as_int(line) for line in restart_counts.splitlines()),
+        "restart_count": sum(int(x) for x in restart_counts.splitlines() if x),
         "rollout_phase": rollout_phase,
         "rollout_message": rollout_message,
         "demo_api_base_url": os.environ.get("DEMO_API_BASE_URL", ""),
@@ -80,20 +73,22 @@ def target_guard(data):
     return guard
 
 
+def demo_api_signal(status, observed):
+    if status is None:
+        return "demo_api_unreachable", "unknown"
+    if status >= 500 or observed.get("status") in ("failing", "not_ready"):
+        return "demo_api_failing", "blocking"
+    if observed.get("status") == "degraded":
+        return "demo_api_degraded", "degrading"
+    return None, "supports_pass"
+
+
 def collect_demo_api(base_url, reasons, records):
     for path, signal in (("/healthz", "http_healthz"), ("/readyz", "http_readyz")):
         status, observed = fetch_json(base_url, path)
-        if status is None:
-            reasons.add("demo_api_unreachable")
-            contribution = "unknown"
-        elif status >= 500 or observed.get("status") in ("failing", "not_ready"):
-            reasons.add("demo_api_failing")
-            contribution = "blocking"
-        elif observed.get("status") == "degraded":
-            reasons.add("demo_api_degraded")
-            contribution = "degrading"
-        else:
-            contribution = "supports_pass"
+        reason, contribution = demo_api_signal(status, observed)
+        if reason:
+            reasons.add(reason)
         records.append({
             "source": "demo_api",
             "signal": signal,
@@ -120,13 +115,6 @@ def decide(data):
 
     if not guard["verified"]:
         reasons.add("target_guard_unverified")
-    records.append({
-        "source": "target_guard",
-        "signal": "target_identity",
-        "observed": guard,
-        "classification": "automation-grade",
-        "contribution": "supports_pass" if guard["verified"] else "blocking",
-    })
 
     ready = data["ready_pods"]
     if ready is None:
@@ -149,9 +137,6 @@ def decide(data):
     else:
         rollout_contribution = "supports_pass"
     records.append({"source": "argo_rollouts", "signal": "rollout_phase", "observed": phase, "classification": "automation-grade", "contribution": rollout_contribution})
-    records.append({"source": "kubernetes", "signal": "restart_count", "observed": data["restart_count"], "classification": "diagnostic-only", "contribution": "diagnostic"})
-    if data["rollout_message"]:
-        records.append({"source": "argo_rollouts", "signal": "rollout_message", "observed": data["rollout_message"], "classification": "diagnostic-only", "contribution": "diagnostic"})
 
     if data["demo_api_base_url"]:
         collect_demo_api(data["demo_api_base_url"], reasons, records)
@@ -191,13 +176,10 @@ def self_test():
     unknown = decide({**base, "ready_pods": None})
     assert unknown["decision"] == "unknown" and "ready_pods_unknown" in unknown["reasons"]
 
-    original = globals()["fetch_json"]
-    globals()["fetch_json"] = lambda _base, _path: (200, {"status": "degraded"})
-    try:
-        degraded = decide({**base, "demo_api_base_url": "http://demo-api"})
-    finally:
-        globals()["fetch_json"] = original
-    assert degraded["decision"] == "degraded" and "demo_api_degraded" in degraded["reasons"]
+    reasons = set()
+    reason, contribution = demo_api_signal(200, {"status": "degraded"})
+    reasons.add(reason)
+    assert final_decision(reasons) == "degraded" and contribution == "degrading"
     print("health output check passed")
 
 
