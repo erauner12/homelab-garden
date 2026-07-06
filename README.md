@@ -147,13 +147,11 @@ The report includes environment, GitOps, rollout, workload, health, event, and l
 
 ## Optional Rollout Risk Review
 
-Render a read-only JSON pre-rollout readiness report from release intent plus optional evidence:
-
 ```bash
 garden workflow rollout-risk-review --env local
 ```
 
-Risk review is not incident investigation: investigation gathers runtime context, while risk review assesses whether an intended rollout has enough evidence to start. Missing release intent blocks readiness; missing health, policy, ArgoCD, Rollouts, or hcloud lifecycle evidence is reported as explicit unknowns. See [`docs/rollout-risk-review.md`](docs/rollout-risk-review.md).
+Renders a read-only pre-rollout readiness JSON report; see [`docs/rollout-risk-review.md`](docs/rollout-risk-review.md).
 
 ## Optional Policy Validation
 

@@ -20,11 +20,7 @@ Generated reports under `reports/risk-review/` are ignored by Git.
 
 ## Inputs
 
-Required:
-
-- release intent (`release-intents/demo-api-local.json` or `release-intents/demo-api-hcloud-lab.json`)
-
-Optional evidence paths can be supplied through environment variables:
+The report requires the environment release intent (`release-intents/demo-api-local.json` or `release-intents/demo-api-hcloud-lab.json`) and can read optional evidence paths from environment variables:
 
 | Variable | Evidence |
 | --- | --- |

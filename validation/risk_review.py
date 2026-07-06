@@ -3,7 +3,6 @@
 import argparse
 import json
 import os
-from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -26,14 +25,6 @@ def rel(path):
         return str(path)
 
 
-def modified_at(path):
-    try:
-        stamp = Path(path).stat().st_mtime
-    except OSError:
-        return None
-    return datetime.fromtimestamp(stamp, timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-
 def issue(code, message, source=None):
     out = {"code": code, "message": message}
     if source:
@@ -46,7 +37,6 @@ def evidence_record(name, path=None, availability="missing", effect="unknown", d
         "name": name,
         "path": rel(path),
         "availability": availability,
-        "modified_at_utc": modified_at(path) if path else None,
         "effect": effect,
     }
     if detail is not None:
@@ -186,40 +176,32 @@ def intent_summary(intent, path, env):
     if not isinstance(intent, dict):
         return {
             "path": rel(path),
-            "available": False,
-            "name": None,
             "app": None,
             "environment": env,
             "gitRevision": None,
             "manifestPath": None,
-            "image": {"reference": None, "identityMode": None, "risk": None},
-            "authority": None,
+            "image": None,
         }
-    metadata = intent.get("metadata") if isinstance(intent.get("metadata"), dict) else {}
     app = intent.get("app") if isinstance(intent.get("app"), dict) else {}
     git = intent.get("git") if isinstance(intent.get("git"), dict) else {}
     manifest = intent.get("manifest") if isinstance(intent.get("manifest"), dict) else {}
-    image = intent.get("image") if isinstance(intent.get("image"), dict) else {}
     return {
         "path": rel(path),
-        "available": True,
-        "name": metadata.get("name"),
         "app": app.get("id"),
         "environment": intent.get("environment"),
         "gitRevision": git.get("revision"),
         "manifestPath": manifest.get("path"),
-        "image": {"reference": image.get("reference"), "identityMode": image.get("identityMode"), "risk": image.get("risk")},
-        "authority": intent.get("authority"),
+        "image": intent.get("image"),
     }
 
 
-def evidence_paths(args, environ):
+def evidence_paths(environ):
     return {
-        "health_gate_v2": args.health_evidence or environ.get("HEALTH_GATE_EVIDENCE_PATH"),
-        "policy_validation": args.policy_evidence or environ.get("POLICY_EVIDENCE_PATH"),
-        "argocd_state": args.argocd_evidence or environ.get("ARGOCD_EVIDENCE_PATH"),
-        "rollouts_state": args.rollouts_evidence or environ.get("ROLLOUTS_EVIDENCE_PATH"),
-        "hcloud_lifecycle": args.hcloud_evidence or environ.get("HCLOUD_EVIDENCE_PATH"),
+        "health_gate_v2": environ.get("HEALTH_GATE_EVIDENCE_PATH"),
+        "policy_validation": environ.get("POLICY_EVIDENCE_PATH"),
+        "argocd_state": environ.get("ARGOCD_EVIDENCE_PATH"),
+        "rollouts_state": environ.get("ROLLOUTS_EVIDENCE_PATH"),
+        "hcloud_lifecycle": environ.get("HCLOUD_EVIDENCE_PATH"),
     }
 
 
@@ -234,7 +216,7 @@ def build_report(args, environ=None):
     if env not in ALLOWED_ENVIRONMENTS:
         blockers.append(issue("unsupported_environment", f"risk review supports only local or hcloud-lab, got {env}", "environment"))
 
-    paths = evidence_paths(args, environ)
+    paths = evidence_paths(environ)
     guard = hcloud_target_guard(env, environ)
     if env == "hcloud-lab" and paths["hcloud_lifecycle"] and not guard["verified"]:
         blockers.append(issue("hcloud_target_guard_unverified", "hcloud evidence was requested before the disposable hcloud-lab target guard passed", "target_guard"))
@@ -258,7 +240,6 @@ def build_report(args, environ=None):
         "risks": risks,
         "unknowns": unknowns,
         "evidence": evidence,
-        "safety": {"readOnly": True, "realHomelabTargetAllowed": False},
     }
 
 
@@ -266,11 +247,6 @@ def parser():
     p = argparse.ArgumentParser(description="Render a read-only rollout risk review report")
     p.add_argument("--intent", help="release intent JSON path")
     p.add_argument("--env", choices=sorted(ALLOWED_ENVIRONMENTS), help="expected review environment")
-    p.add_argument("--health-evidence", help="optional health-gate v2 JSON evidence path")
-    p.add_argument("--policy-evidence", help="optional policy validation evidence path")
-    p.add_argument("--argocd-evidence", help="optional read-only ArgoCD state evidence path")
-    p.add_argument("--rollouts-evidence", help="optional read-only Argo Rollouts state evidence path")
-    p.add_argument("--hcloud-evidence", help="optional hcloud lifecycle evidence path; requires hcloud target guard")
     p.add_argument("--self-test", action="store_true", help="run deterministic unit checks")
     return p
 
@@ -285,7 +261,7 @@ def write_or_print(report):
 
 
 def make_args(**kwargs):
-    defaults = {"intent": None, "env": None, "health_evidence": None, "policy_evidence": None, "argocd_evidence": None, "rollouts_evidence": None, "hcloud_evidence": None}
+    defaults = {"intent": None, "env": None}
     defaults.update(kwargs)
     return argparse.Namespace(**defaults)
 
@@ -304,22 +280,26 @@ def self_test():
         rollouts = write_json(tmp / "rollouts.json", {"phase": "Healthy"})
         hcloud = write_json(tmp / "hcloud.json", {"status": "active"})
 
-        complete = build_report(make_args(
-            intent=str(ROOT / "release-intents/demo-api-local.json"),
-            health_evidence=health,
-            policy_evidence=policy,
-            argocd_evidence=argocd,
-            rollouts_evidence=rollouts,
-        ), environ={"KUBE_CONTEXT": "kind-homelab-garden"})
+        evidence_env = {
+            "HEALTH_GATE_EVIDENCE_PATH": health,
+            "POLICY_EVIDENCE_PATH": policy,
+            "ARGOCD_EVIDENCE_PATH": argocd,
+            "ROLLOUTS_EVIDENCE_PATH": rollouts,
+            "HCLOUD_EVIDENCE_PATH": hcloud,
+        }
+        complete = build_report(
+            make_args(intent=str(ROOT / "release-intents/demo-api-local.json")),
+            environ={**evidence_env, "KUBE_CONTEXT": "kind-homelab-garden"},
+        )
         assert complete["decision"] == "pass", complete
         assert "decisionContract" not in complete
-        assert "forbiddenActions" not in complete["safety"]
+        assert "safety" not in complete
 
         checks = [
             (build_report(make_args(intent=str(tmp / "missing.json")), environ={}), "block", "release_intent_missing", "blockers"),
             (build_report(make_args(intent=str(ROOT / "release-intents/demo-api-local.json")), environ={}), "unknown", "health_gate_v2_missing", "unknowns"),
-            (build_report(make_args(intent=str(ROOT / "release-intents/demo-api-hcloud-lab.json"), env="hcloud-lab", health_evidence=health, policy_evidence=policy, argocd_evidence=argocd, rollouts_evidence=rollouts, hcloud_evidence=hcloud), environ={"KUBE_CONTEXT": "kind-homelab-garden"}), "block", "hcloud_target_guard_unverified", "blockers"),
-            (build_report(make_args(intent=str(ROOT / "release-intents/demo-api-hcloud-lab.json"), env="hcloud-lab", health_evidence=health, policy_evidence=policy, argocd_evidence=argocd, rollouts_evidence=rollouts, hcloud_evidence=hcloud), environ={"KUBE_CONTEXT": DEFAULT_EXPECTED_HCLOUD_CONTEXT}), "review", "tag_only_image_identity", "risks"),
+            (build_report(make_args(intent=str(ROOT / "release-intents/demo-api-hcloud-lab.json"), env="hcloud-lab"), environ={**evidence_env, "KUBE_CONTEXT": "kind-homelab-garden"}), "block", "hcloud_target_guard_unverified", "blockers"),
+            (build_report(make_args(intent=str(ROOT / "release-intents/demo-api-hcloud-lab.json"), env="hcloud-lab"), environ={**evidence_env, "KUBE_CONTEXT": DEFAULT_EXPECTED_HCLOUD_CONTEXT}), "review", "tag_only_image_identity", "risks"),
         ]
         for report, decision, code, bucket in checks:
             assert report["decision"] == decision, report
