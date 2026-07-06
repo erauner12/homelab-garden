@@ -35,7 +35,7 @@ Current signals stay intentionally small: request count, 5xx error count, simple
 
 ## Health gate v2
 
-`validation/health.sh` emits a v2 decision envelope with `decision`, `reasons`, `evidence`, `environment`, and `target_guard`. Automation must advance only on `decision: pass`; `fail`, `degraded`, and `unknown` exit non-zero. When `DEMO_API_BASE_URL` is set, the gate reads `/healthz`, `/readyz`, `/metrics`, and `/version` without requiring Prometheus.
+Health gate v2 consumes these endpoints only when `DEMO_API_BASE_URL` is set; only `decision: pass` is automation-safe.
 
 ## Safety and validation boundaries
 
