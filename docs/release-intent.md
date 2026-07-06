@@ -17,19 +17,7 @@ The checked-in samples are public-safe:
 
 ## Minimal model
 
-Each intent document uses `schemaVersion: homelab-garden.release-intent/v1alpha1` and `kind: ReleaseIntent` with these required fields:
-
-| Field | Meaning |
-| --- | --- |
-| `metadata.name` | Human-readable sample name. |
-| `app.id` | Application identifier; currently `demo-api`. |
-| `environment` | Explicit target: `local` or `hcloud-lab` only. |
-| `git.revision` | Git revision or symbolic lab revision to review. |
-| `manifest.path` | Repository-relative Kustomize target or overlay path. |
-| `image.reference` | Image reference for the deployable artifact. |
-| `image.identityMode` | `digest` when immutable, `tag` when the lab only has a tag. |
-| `validationEvidence[]` | References to commands, paths, URIs, or summary IDs; large reports stay outside the intent file. |
-| `authority` | Must state that the file is non-authoritative, does not mutate clusters, and does not create PRs. |
+The canonical field list is `validation/release_intent.py` plus the checked-in samples: they cover app, environment, Git revision, manifest path, image identity, evidence refs, and `authority: "read-only"`.
 
 ## Artifact identity
 
@@ -43,4 +31,4 @@ Future tenant-wave simulation should reference the same release intent as the re
 
 ## Safety boundary
 
-Release intent files must not reference the real homelab cluster, production-only state, private domains, provider credentials, kubeconfigs, or secrets. The validator rejects required-field omissions, unsupported environments, digest/tag identity mismatches, deployment-authority flags, and obvious real-homelab or credential-like references.
+Release intent files must not reference the real homelab cluster, production-only state, private domains, provider credentials, kubeconfigs, or secrets. The validator rejects required-field omissions, unsupported environments, digest/tag identity mismatches, non-read-only authority, and obvious real-homelab or credential-like references.

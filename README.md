@@ -63,9 +63,10 @@ make kind-down
 ```
 
 The local environment defaults to `kind-homelab-garden`. `make check` runs
-release intent validation, static render validation, Kubernetes schema validation, Go contract tests,
-partial Garden config resolution, and the local Garden validation workflow.
-Static validation checks that each Kustomize entrypoint renders. Schema validation pipes the rendered YAML through `kubeconform -strict -summary`.
+the repository validators, Go contract tests, partial Garden config resolution,
+and the local Garden validation workflow. Static validation checks that each
+Kustomize entrypoint renders. Schema validation pipes the rendered YAML through
+`kubeconform -strict -summary`.
 Go contract tests check repo-specific labels, layer/path boundaries, expected
 namespaces, workload safety, and Service-to-Deployment selectors. The demo API
 Python endpoint tests are uv-managed and can be run with `make demo-api-test`.
@@ -79,13 +80,7 @@ services. The demo API also exposes stable `/healthz`, `/readyz`, `/version`,
 
 ## Release Intent Samples
 
-Public-safe release intent samples for `demo-api` live in `release-intents/` and are validated with:
-
-```bash
-make release-intent
-```
-
-The model is read-only context for future rollout risk review and tenant-wave simulation. It is not a CRD, controller, PR generator, or deployment authority. See [`docs/release-intent.md`](docs/release-intent.md).
+See [`docs/release-intent.md`](docs/release-intent.md) for the public-safe `demo-api` samples in `release-intents/`.
 
 ## Optional Local ArgoCD Reconciliation
 

@@ -20,20 +20,8 @@
     "risk": "Tag-only identity is mutable; risk review must treat the image as less certain than a digest-pinned artifact."
   },
   "validationEvidence": [
-    {
-      "name": "hcloud-target-render",
-      "type": "path",
-      "ref": "k8s/targets/hcloud-lab"
-    },
-    {
-      "name": "hcloud-lab-boundary",
-      "type": "path",
-      "ref": "docs/architecture/cloud-reconciliation-lab.md"
-    }
+    "k8s/targets/hcloud-lab",
+    "docs/architecture/cloud-reconciliation-lab.md"
   ],
-  "authority": {
-    "nonAuthoritative": true,
-    "mutatesCluster": false,
-    "createsPullRequests": false
-  }
+  "authority": "read-only"
 }

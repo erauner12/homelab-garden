@@ -4,7 +4,6 @@ The default local loop intentionally avoids ArgoCD.
 
 It answers:
 
-- do release intent samples include required identity fields and stay public-safe?
 - do the Kustomize entrypoints render?
 - does the rendered output satisfy strict built-in Kubernetes schemas?
 - does the rendered output satisfy repo contracts for labels, layers,
@@ -22,9 +21,10 @@ make kind-status
 make kind-down
 ```
 
-`make check` runs release intent validation, static render validation, Kubernetes schema validation,
-Go contract tests, Garden config resolution, Garden deploys, and the
-in-cluster smoke check. Release intent validation checks the public-safe read-only samples in `release-intents/`; static validation proves the app-owned overlays and `k8s/targets/local`
+`make check` validates release intent samples in `release-intents/`.
+It also runs static render validation, Kubernetes schema validation, Go contract
+tests, Garden config resolution, Garden deploys, and the in-cluster smoke check.
+Static validation proves the app-owned overlays and `k8s/targets/local`
 composition index render, schema validation pipes rendered standard Kubernetes
 resources through `kubeconform -strict -summary`, and Go contracts enforce
 repo-specific delivery rules that Kubernetes schemas cannot express. That keeps

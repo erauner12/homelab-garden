@@ -19,20 +19,8 @@
     "identityMode": "digest"
   },
   "validationEvidence": [
-    {
-      "name": "static-render",
-      "type": "command",
-      "ref": "make static"
-    },
-    {
-      "name": "schema-check",
-      "type": "path",
-      "ref": "validation/schema.sh"
-    }
+    "make static",
+    "validation/schema.sh"
   ],
-  "authority": {
-    "nonAuthoritative": true,
-    "mutatesCluster": false,
-    "createsPullRequests": false
-  }
+  "authority": "read-only"
 }
