@@ -33,6 +33,10 @@ Simulation state is in-memory and scoped to the running demo API process. Restar
 
 Current signals stay intentionally small: request count, 5xx error count, simple request-duration summary, active simulation mode, and configured latency.
 
+## Health gate v2
+
+`validation/health.sh` emits a v2 decision envelope with `decision`, `reasons`, `evidence`, `environment`, and `target_guard`. Automation must advance only on `decision: pass`; `fail`, `degraded`, and `unknown` exit non-zero. When `DEMO_API_BASE_URL` is set, the gate reads `/healthz`, `/readyz`, `/metrics`, and `/version` without requiring Prometheus.
+
 ## Safety and validation boundaries
 
 The endpoint output is intentionally public-safe: it contains app name, version, status, mode, latency, and aggregate counters only. It must not include secrets, provider credentials, private domains, Terraform state, or real homelab identifiers.
