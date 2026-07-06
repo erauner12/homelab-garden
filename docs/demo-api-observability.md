@@ -33,6 +33,10 @@ Simulation state is in-memory and scoped to the running demo API process. Restar
 
 Current signals stay intentionally small: request count, 5xx error count, simple request-duration summary, active simulation mode, and configured latency.
 
+## Health gate v2
+
+Health gate v2 consumes these endpoints only when `DEMO_API_BASE_URL` is set; only `decision: pass` is automation-safe. Metric-backed rollout analysis should consume `decision`, `reasons`, and automation-grade `evidence`, and progress automatically only on pass. Rollout risk review should display `decision`, `reasons`, `environment`, `target_guard`, and evidence; non-pass decisions block or require review.
+
 ## Safety and validation boundaries
 
 The endpoint output is intentionally public-safe: it contains app name, version, status, mode, latency, and aggregate counters only. It must not include secrets, provider credentials, private domains, Terraform state, or real homelab identifiers.
