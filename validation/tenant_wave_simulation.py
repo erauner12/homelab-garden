@@ -54,10 +54,7 @@ def default_intent_path(env):
 
 
 def configured_risk_review_path(environ):
-    for key in ("RISK_REVIEW_EVIDENCE_PATH", "ROLLOUT_RISK_REVIEW_PATH", "RISK_REVIEW_REPORT_PATH"):
-        if environ.get(key):
-            return environ[key]
-    return None
+    return environ.get("RISK_REVIEW_EVIDENCE_PATH")
 
 
 def intent_summary(intent, path, env):
@@ -109,33 +106,42 @@ def load_intent(path, requested_env, blockers, unknowns):
     return data
 
 
+RISK_REVIEW_DECISIONS = {
+    "pass": ("pass", "risk review passed", "allows_simulation"),
+    "block": ("block", "risk review blocked rollout", "blocks_simulation"),
+    "review": ("review", "risk review requires manual review", "requires_review"),
+    "unknown": ("unknown", "risk review decision is unknown", "requires_review"),
+}
+
+
+def classify_risk_review(decision):
+    return RISK_REVIEW_DECISIONS.get(decision, ("unknown", "risk review evidence is missing or unclassified", "unknown"))
+
+
 def load_risk_review(path, blockers, risks, unknowns):
     if not path:
         unknowns.append(issue("risk_review_missing", "no rollout risk review JSON was provided; set RISK_REVIEW_EVIDENCE_PATH to use one", "risk_review"))
-        return {"path": None, "availability": "missing", "decision": None, "effect": "unknown"}
+        state, message, effect = classify_risk_review(None)
+        return {"path": None, "availability": "missing", "decision": None, "state": state, "message": message, "effect": effect}
 
     data, error = read_json(path)
     if error:
         unknowns.append(issue("risk_review_unavailable", error, "risk_review"))
-        return {"path": rel(path), "availability": "unavailable", "decision": None, "effect": "unknown", "detail": error}
+        state, message, effect = classify_risk_review(None)
+        return {"path": rel(path), "availability": "unavailable", "decision": None, "state": state, "message": message, "effect": effect, "detail": error}
 
     decision = data.get("decision") if isinstance(data, dict) else None
+    state, message, effect = classify_risk_review(decision)
     if decision == "block":
         blockers.append(issue("risk_review_block", "rollout risk review decision is block", "risk_review"))
-        effect = "blocks_simulation"
     elif decision == "unknown":
         unknowns.append(issue("risk_review_unknown", "rollout risk review decision is unknown", "risk_review"))
-        effect = "requires_review"
     elif decision == "review":
         risks.append(issue("risk_review_requires_review", "rollout risk review decision requires manual review", "risk_review"))
-        effect = "requires_review"
-    elif decision == "pass":
-        effect = "allows_simulation"
-    else:
+    elif decision != "pass":
         unknowns.append(issue("risk_review_unclassified", f"rollout risk review decision is {decision or 'missing'}", "risk_review"))
-        effect = "unknown"
 
-    return {"path": rel(path), "availability": "available", "decision": decision, "effect": effect}
+    return {"path": rel(path), "availability": "available", "decision": decision, "state": state, "message": message, "effect": effect}
 
 
 def image_gate(intent, risks):
@@ -148,18 +154,6 @@ def image_gate(intent, risks):
         return {"state": "review", "message": message}
     return {"state": "unknown", "message": "image identity is missing or unclassified"}
 
-
-def risk_gate_state(risk_review):
-    decision = risk_review.get("decision")
-    if decision == "pass":
-        return "pass", "risk review passed"
-    if decision == "block":
-        return "block", "risk review blocked rollout"
-    if decision == "review":
-        return "review", "risk review requires manual review"
-    if decision == "unknown":
-        return "unknown", "risk review decision is unknown"
-    return "unknown", "risk review evidence is missing or unclassified"
 
 
 def wave_policy(blockers, risks, unknowns, image, risk_review):
@@ -175,49 +169,22 @@ def wave_policy(blockers, risks, unknowns, image, risk_review):
     return None, "review"
 
 
-def build_tenants(eligible_wave, overall_status, blockers, unknowns, image, risk_review):
-    risk_state, risk_message = risk_gate_state(risk_review)
+def build_gates(blockers, image, risk_review):
+    return [
+        {"name": "releaseIntent", "state": "block" if blockers else "pass", "message": "release intent provides simulated release input"},
+        {"name": "artifactIdentity", "state": image["state"], "message": image["message"]},
+        {"name": "rolloutRiskReview", "state": risk_review["state"], "message": risk_review["message"]},
+    ]
+
+
+def build_tenants(eligible_wave, overall_status):
     tenants = []
     for tenant in SAMPLE_TENANTS:
         wave = tenant["wave"]
-        tenant_blockers = []
-        tenant_unknowns = []
-        if blockers:
-            status = "blocked"
-            tenant_blockers = blockers
-            wave_state = "blocked"
-            wave_message = "simulation stopped by blocker"
-        elif eligible_wave == wave:
+        status = "eligible" if eligible_wave == wave else "held"
+        if overall_status != "eligible":
             status = overall_status
-            wave_state = "eligible"
-            wave_message = "first wave may start; later waves wait for prior wave completion"
-            if risk_state == "unknown":
-                tenant_unknowns = unknowns
-        else:
-            status = "held"
-            wave_state = "held"
-            wave_message = "held by ordered wave policy until earlier waves complete"
-            if overall_status in {"manual-review", "review"}:
-                status = overall_status
-                wave_message = "held until manual review clears current gates"
-                tenant_unknowns = unknowns
-
-        tenants.append(
-            {
-                "id": tenant["id"],
-                "displayName": tenant["displayName"],
-                "wave": wave,
-                "status": status,
-                "gates": [
-                    {"name": "releaseIntent", "state": "block" if blockers else "pass", "message": "release intent provides simulated release input"},
-                    {"name": "artifactIdentity", "state": image["state"], "message": image["message"]},
-                    {"name": "rolloutRiskReview", "state": risk_state, "message": risk_message},
-                    {"name": "waveOrder", "state": wave_state, "message": wave_message},
-                ],
-                "blockers": tenant_blockers,
-                "unknowns": tenant_unknowns,
-            }
-        )
+        tenants.append({"id": tenant["id"], "displayName": tenant["displayName"], "wave": wave, "status": status})
     return tenants
 
 
@@ -232,26 +199,21 @@ def build_report(args, environ=None):
     risk_review = load_risk_review(args.risk_review or configured_risk_review_path(environ), blockers, risks, unknowns)
     image = image_gate(intent or {}, risks)
     eligible_wave, overall_status = wave_policy(blockers, risks, unknowns, image, risk_review)
-    tenants = build_tenants(eligible_wave, overall_status, blockers, unknowns, image, risk_review)
-    held_waves = [wave for wave in sorted({tenant["wave"] for tenant in SAMPLE_TENANTS}) if wave != eligible_wave]
+    tenants = build_tenants(eligible_wave, overall_status)
 
     return {
         "schemaVersion": "homelab-garden.tenant-wave-simulation/v1alpha1",
         "kind": "TenantWaveSimulation",
         "mode": "read-only-tenant-wave-simulation",
         "simulationOnly": True,
-        "authoritative": False,
-        "nonAuthoritativeReason": "Report-only model; does not generate PRs, sync ArgoCD, apply manifests, run Terraform, or mutate clusters.",
         "status": overall_status,
         "intent": intent_summary(intent, intent_path, env),
         "riskReview": risk_review,
-        "waveOrder": [{"wave": tenant["wave"], "tenantIds": [tenant["id"]]} for tenant in SAMPLE_TENANTS],
+        "gates": build_gates(blockers, image, risk_review),
         "tenants": tenants,
         "blockers": blockers,
         "risks": risks,
         "unknowns": unknowns,
-        "eligibleNextWave": eligible_wave,
-        "heldWaves": held_waves,
     }
 
 
@@ -289,14 +251,15 @@ def self_test():
     hcloud_intent = str(ROOT / "release-intents/demo-api-hcloud-lab.json")
     missing_risk = build_report(make_args(intent=local_intent), environ={})
     assert missing_risk["simulationOnly"] is True, missing_risk
-    assert missing_risk["authoritative"] is False, missing_risk
     assert len(missing_risk["tenants"]) == 3, missing_risk
-    assert missing_risk["eligibleNextWave"] == 1, missing_risk
+    assert missing_risk["tenants"][0]["status"] == "eligible", missing_risk
+    assert missing_risk["tenants"][1]["status"] == "held", missing_risk
+    assert "gates" not in missing_risk["tenants"][0], missing_risk
     assert any(item["code"] == "risk_review_missing" for item in missing_risk["unknowns"]), missing_risk
 
     tag_only = build_report(make_args(intent=hcloud_intent, env="hcloud-lab"), environ={})
     assert tag_only["status"] == "manual-review", tag_only
-    assert tag_only["eligibleNextWave"] is None, tag_only
+    assert all(tenant["status"] == "manual-review" for tenant in tag_only["tenants"]), tag_only
     assert any(item["code"] == "tag_only_image_identity" for item in tag_only["risks"]), tag_only
 
     with TemporaryDirectory() as tmp:
@@ -311,11 +274,12 @@ def self_test():
 
         unknown = build_report(make_args(intent=local_intent, risk_review=unknown_path), environ={})
         assert unknown["status"] == "review", unknown
-        assert unknown["eligibleNextWave"] is None, unknown
+        assert all(tenant["status"] == "review" for tenant in unknown["tenants"]), unknown
 
         passed = build_report(make_args(intent=local_intent, risk_review=pass_path), environ={})
         assert passed["status"] == "eligible", passed
-        assert passed["eligibleNextWave"] == 1, passed
+        assert passed["tenants"][0]["status"] == "eligible", passed
+        assert passed["tenants"][1]["status"] == "held", passed
 
     print("tenant wave simulation self-test passed")
 

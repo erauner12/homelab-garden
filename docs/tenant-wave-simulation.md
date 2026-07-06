@@ -21,7 +21,7 @@ Generated reports are local artifacts only; do not treat them as deployment auth
 
 The simulation consumes release intent as the simulated release input. By default it reads `release-intents/demo-api-local.json`; pass `--intent` or set `RELEASE_INTENT_PATH` to use a different checked-in sample. The output references the app, environment, Git revision, manifest path, and image identity from release intent.
 
-Rollout risk review evidence is optional. Pass `--risk-review` or set `RISK_REVIEW_EVIDENCE_PATH` (also accepts `ROLLOUT_RISK_REVIEW_PATH`) to a rollout risk review JSON report. Missing risk review evidence is reported as an explicit unknown but still produces output.
+Rollout risk review evidence is optional. Pass `--risk-review` or set `RISK_REVIEW_EVIDENCE_PATH` to a rollout risk review JSON report. Missing risk review evidence is reported as an explicit unknown but still produces output.
 
 ## Sample tenants and waves
 
@@ -37,11 +37,7 @@ These are not customer names, private homelab tenants, provider accounts, or pro
 
 ## Gate behavior
 
-- `decision: block` from rollout risk review blocks the simulation and holds every wave.
-- `decision: unknown` or `decision: review` marks the current gates as review/unknown and holds waves until a human reviews them.
-- Tag-only image identity is treated as slower/manual-review because the artifact is mutable.
-- Digest-pinned image identity with no blockers can mark wave 1 as the eligible next wave; later waves remain held by ordered-wave policy until earlier waves complete.
-- Missing rollout risk review is an explicit unknown, not a reason for the tool to skip output.
+Release intent, artifact identity, and optional risk-review evidence set shared gates; tenant entries then show whether each wave is eligible, held, blocked, or waiting on review.
 
 ## Hcloud boundary
 
