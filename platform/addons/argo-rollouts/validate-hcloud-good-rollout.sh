@@ -2,11 +2,12 @@
 set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/../argocd/hcloud-common.sh"
+source "${root}/validation/smoke-pod.sh"
 
 rollout_namespace="${HCLOUD_ROLLOUT_NAMESPACE:-hcloud-rollouts-demo}"
 rollout_name="${DEMO_APP_NAME:-demo-api}"
 expected_text="${SMOKE_EXPECTED_TEXT:-homelab-garden demo-api ok}"
-check_pod="${SMOKE_CHECK_POD:-${rollout_name}-hcloud-rollout-smoke}"
+check_pod=""
 timeout_seconds="${HCLOUD_ROLLOUT_TIMEOUT_SECONDS:-300}"
 poll_seconds="${HCLOUD_ROLLOUT_POLL_SECONDS:-5}"
 
@@ -34,7 +35,9 @@ EOF
 }
 
 cleanup_smoke_pod() {
-  "${kubectl_cmd[@]}" -n "${rollout_namespace}" delete pod "${check_pod}" --ignore-not-found --wait=false >/dev/null 2>&1 || true
+  if [[ -n "${check_pod}" ]]; then
+    "${kubectl_cmd[@]}" -n "${rollout_namespace}" delete pod "${check_pod}" --ignore-not-found --wait=false >/dev/null 2>&1 || true
+  fi
 }
 
 on_exit() {
@@ -73,10 +76,7 @@ smoke_rollout_service() {
   local url="http://${rollout_name}.${rollout_namespace}.svc.cluster.local"
 
   cleanup_smoke_pod
-  "${kubectl_cmd[@]}" -n "${rollout_namespace}" run "${check_pod}" \
-    --image=curlimages/curl:8.8.0 \
-    --restart=Never \
-    --command -- sleep 300 >/dev/null
+  check_pod="$(create_smoke_pod "${rollout_namespace}")"
   "${kubectl_cmd[@]}" -n "${rollout_namespace}" wait --for=condition=Ready "pod/${check_pod}" --timeout=60s
   "${kubectl_cmd[@]}" -n "${rollout_namespace}" exec "${check_pod}" -- curl -fsS "${url}" | grep -q "${expected_text}"
   echo "Smoke check passed for Rollout service ${url}"
