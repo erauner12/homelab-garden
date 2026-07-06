@@ -40,22 +40,6 @@ curl -fsS -X POST http://demo-api.demo.svc.cluster.local/simulate/reset
 
 Current signals stay intentionally small: request count, 5xx error count, simple request-duration summary, active simulation mode, and configured latency.
 
-## Future health-gate signal candidates
-
-Automation-grade candidates for later health-gate v2 or metric-backed Rollouts work:
-
-- `/readyz` success/failure and JSON `ready` value
-- `/healthz` success/failure and JSON `healthy` value
-- error rate over a bounded window
-- request-duration trend over a bounded window
-- active simulation mode and configured latency when a workflow intentionally enables simulation
-
-Diagnostic-only signals for now:
-
-- `/version` response
-- Raw `/` body beyond the backward-compatible smoke string
-- Individual pod logs/events and Kubernetes rollout messages
-
 ## Safety and validation boundaries
 
 The endpoint output is intentionally public-safe: it contains app name, version, status, mode, latency, and aggregate counters only. It must not include secrets, provider credentials, private domains, Terraform state, or real homelab identifiers.

@@ -26,7 +26,6 @@ class AppState:
         self.error_total = 0
         self.duration_count = 0
         self.duration_sum = 0.0
-        self.duration_last = 0.0
 
     def snapshot(self) -> dict[str, Any]:
         return {"mode": self.mode, "latency_ms": self.latency_ms}
@@ -47,7 +46,6 @@ class AppState:
             self.error_total += 1
         self.duration_count += 1
         self.duration_sum += duration
-        self.duration_last = duration
 
     def metrics(self) -> str:
         lines = [
@@ -58,7 +56,6 @@ class AppState:
             "# TYPE demo_api_request_duration_seconds summary",
             f"demo_api_request_duration_seconds_count {self.duration_count}",
             f"demo_api_request_duration_seconds_sum {self.duration_sum:.6f}",
-            f"demo_api_request_duration_seconds_last {self.duration_last:.6f}",
             "# TYPE demo_api_simulation_mode gauge",
         ]
         lines.extend(f'demo_api_simulation_mode{{mode="{mode}"}} {1 if mode == self.mode else 0}' for mode in MODES)
@@ -90,9 +87,6 @@ def make_handler(state: AppState) -> type[BaseHTTPRequestHandler]:
         def do_POST(self) -> None:  # noqa: N802 - stdlib handler API
             self._handle("POST")
 
-        def log_message(self, fmt: str, *args: Any) -> None:
-            print(f"{self.address_string()} - {fmt % args}", flush=True)
-
         def _handle(self, method: str) -> None:
             started = time.monotonic()
             parsed = urlparse(self.path)
@@ -100,10 +94,6 @@ def make_handler(state: AppState) -> type[BaseHTTPRequestHandler]:
                 status, content_type, body = self._route(method, parsed.path, parsed.query)
             except ValueError as err:
                 status, content_type, body = 400, "application/json", json_body({"error": str(err)})
-            except Exception as err:  # pragma: no cover - defensive handler boundary
-                status = 500
-                content_type = "application/json"
-                body = json_body({"error": "internal server error", "detail": err.__class__.__name__})
             state.record(status, time.monotonic() - started)
             self.send_response(status)
             self.send_header("Content-Type", content_type)

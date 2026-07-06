@@ -118,11 +118,5 @@ def test_latency_is_bounded_and_invalid_modes_are_rejected(base_url):
     assert status == 200
     assert json.loads(body)["latency_ms"] == demo_api.MAX_LATENCY_MS
 
-    request = Request(base_url + "/simulate?mode=surprise", method="POST")
-    with pytest.raises(HTTPError) as exc_info:
-        urlopen(request, timeout=2)
-    err = exc_info.value
-    assert err.code == 400
-    err.close()
-
+    assert "mode must be" in http_error(base_url, "/simulate?mode=surprise", 400, method="POST")
     assert "mode must be" in http_error(base_url, "/simulate?mode=reset", 400, method="POST")
