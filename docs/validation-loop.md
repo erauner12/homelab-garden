@@ -21,7 +21,7 @@ make kind-status
 make kind-down
 ```
 
-`make check` validates release intent samples in `release-intents/`.
+`make check` validates release intent samples in `release-intents/` and runs the cheap rollout risk review self-test.
 It also runs static render validation, Kubernetes schema validation, Go contract
 tests, Garden config resolution, Garden deploys, and the in-cluster smoke check.
 Static validation proves the app-owned overlays and `k8s/targets/local`

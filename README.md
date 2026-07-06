@@ -145,6 +145,16 @@ garden workflow investigate-demo --env local
 
 The report includes environment, GitOps, rollout, workload, health, event, and log context. ArgoCD and Argo Rollouts are optional; if their CRDs are absent, the report marks them `not_installed` and continues. By default the report is written to stdout. To also save it locally, set `INVESTIGATION_REPORT_PATH`, for example `reports/investigation/$(date -u +%Y%m%dT%H%M%SZ)-demo-api.md`; generated reports are ignored by Git.
 
+## Optional Rollout Risk Review
+
+Render a read-only JSON pre-rollout readiness report from release intent plus optional evidence:
+
+```bash
+garden workflow rollout-risk-review --env local
+```
+
+Risk review is not incident investigation: investigation gathers runtime context, while risk review assesses whether an intended rollout has enough evidence to start. Missing release intent blocks readiness; missing health, policy, ArgoCD, Rollouts, or hcloud lifecycle evidence is reported as explicit unknowns. See [`docs/rollout-risk-review.md`](docs/rollout-risk-review.md).
+
 ## Optional Policy Validation
 
 Run local Kyverno CLI checks separately from the default loop:

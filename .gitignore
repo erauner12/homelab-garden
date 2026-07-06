@@ -9,6 +9,7 @@ dist/
 tmp/
 .garden/
 reports/investigation/
+reports/risk-review/
 
 # Python/uv cache from local endpoint tests
 __pycache__/

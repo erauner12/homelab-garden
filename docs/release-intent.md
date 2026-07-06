@@ -25,7 +25,7 @@ Use `image.identityMode: digest` when `image.reference` includes an immutable `@
 
 ## Read-only consumers
 
-Future rollout risk review should read release intent as pre-rollout context: intended environment, Git revision, manifest path, image identity certainty, and validation evidence provenance. Missing release intent or missing required identity fields should become blockers or unknowns in the report, not an excuse to claim readiness.
+Rollout risk review reads release intent as pre-rollout context: intended environment, Git revision, manifest path, image identity certainty, and validation evidence provenance. Missing release intent or missing required identity fields become blockers or unknowns in the report, not an excuse to claim readiness. See `docs/rollout-risk-review.md`.
 
 Future tenant-wave simulation should reference the same release intent as the release being simulated across sample tenants. It should not generate PRs, edit desired state, sync ArgoCD, promote Rollouts, or mutate clusters; it only uses the release identity and optional risk-review evidence to explain wave order and stop conditions.
 

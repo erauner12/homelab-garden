@@ -1,0 +1,23 @@
+apiVersion: garden.io/v0
+kind: Run
+type: exec
+name: rollout-risk-review
+description: Render a read-only pre-rollout risk review report for demo-api.
+spec:
+  command:
+    - env
+    - KUBE_CONTEXT=${var.kubeContext}
+    - RISK_REVIEW_ENVIRONMENT=${var.riskReviewEnvironment}
+    - RELEASE_INTENT_PATH=${var.releaseIntentPath}
+    - APP_NAMESPACE=${var.appNamespace}
+    - DEMO_APP_NAME=${var.demoAppName}
+    - bash
+    - ./validation/risk-review.sh
+---
+apiVersion: garden.io/v0
+kind: Workflow
+name: rollout-risk-review
+description: Render a read-only pre-rollout risk review report for demo-api.
+steps:
+  - description: Read release intent and optional evidence, then render risk review.
+    command: [run, rollout-risk-review]

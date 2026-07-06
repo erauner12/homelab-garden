@@ -1,4 +1,4 @@
-.PHONY: doctor kind-up kind-status release-intent static schema contracts demo-api-test local-validate policy-validate check kind-down
+.PHONY: doctor kind-up kind-status release-intent risk-review static schema contracts demo-api-test local-validate policy-validate check kind-down
 
 doctor:
 	bash ./scripts/doctor.sh
@@ -11,6 +11,9 @@ kind-status:
 
 release-intent:
 	python3 ./validation/release_intent.py
+
+risk-review:
+	python3 ./validation/risk_review.py --self-test
 
 static:
 	./validation/static.sh
@@ -33,6 +36,7 @@ policy-validate:
 check:
 	$(MAKE) doctor
 	$(MAKE) release-intent
+	$(MAKE) risk-review
 	$(MAKE) static
 	$(MAKE) schema
 	$(MAKE) contracts
