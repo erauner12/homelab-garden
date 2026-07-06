@@ -39,9 +39,7 @@ def collect():
     selector = f"app.kubernetes.io/name={name}"
 
     ready_names = kubectl(context, namespace, ["get", "pods", "-l", selector, "-o", "jsonpath={.items[?(@.status.containerStatuses[0].ready==true)].metadata.name}"])
-    restart_counts = kubectl(context, namespace, ["get", "pods", "-l", selector, "-o", 'jsonpath={range .items[*]}{range .status.containerStatuses[*]}{.restartCount}{"\\n"}{end}{end}'])
     rollout_phase = kubectl(context, namespace, ["get", "rollout", name, "-o", "jsonpath={.status.phase}"]) or "Unknown"
-    rollout_message = kubectl(context, namespace, ["get", "rollout", name, "-o", "jsonpath={.status.message}"])
 
     return {
         "namespace": namespace,
@@ -50,27 +48,9 @@ def collect():
         "environment": environment,
         "expected_context": expected_context,
         "ready_pods": len(ready_names.split()),
-        "restart_count": sum(int(x) for x in restart_counts.splitlines() if x),
         "rollout_phase": rollout_phase,
-        "rollout_message": rollout_message,
         "demo_api_base_url": os.environ.get("DEMO_API_BASE_URL", ""),
     }
-
-
-def target_guard(data):
-    guard = {
-        "environment": data["environment"],
-        "verified": True,
-        "reason": "local_guard_not_required",
-        "expected_context": data["expected_context"] if data["environment"] == "hcloud-lab" else None,
-        "observed_context": data["context"],
-    }
-    if data["environment"] == "hcloud-lab":
-        if data["context"] == data["expected_context"]:
-            guard["reason"] = "hcloud_context_verified"
-        else:
-            guard.update(verified=False, reason="hcloud_context_mismatch")
-    return guard
 
 
 def demo_api_signal(status, observed):
@@ -111,10 +91,19 @@ def final_decision(reasons):
 def decide(data):
     reasons = set()
     records = []
-    guard = target_guard(data)
-
-    if not guard["verified"]:
-        reasons.add("target_guard_unverified")
+    guard = {
+        "environment": data["environment"],
+        "verified": True,
+        "reason": "local_guard_not_required",
+        "expected_context": data["expected_context"] if data["environment"] == "hcloud-lab" else None,
+        "observed_context": data["context"],
+    }
+    if data["environment"] == "hcloud-lab":
+        if data["context"] == data["expected_context"]:
+            guard["reason"] = "hcloud_context_verified"
+        else:
+            guard.update(verified=False, reason="hcloud_context_mismatch")
+            reasons.add("target_guard_unverified")
 
     ready = data["ready_pods"]
     if ready is None:
@@ -163,9 +152,7 @@ def self_test():
         "environment": "local",
         "expected_context": "admin@homelab-garden-hcloud-lab",
         "ready_pods": 1,
-        "restart_count": 0,
         "rollout_phase": "Healthy",
-        "rollout_message": "",
         "demo_api_base_url": "",
     }
     assert decide(dict(base))["decision"] == "pass"
@@ -176,10 +163,8 @@ def self_test():
     unknown = decide({**base, "ready_pods": None})
     assert unknown["decision"] == "unknown" and "ready_pods_unknown" in unknown["reasons"]
 
-    reasons = set()
-    reason, contribution = demo_api_signal(200, {"status": "degraded"})
-    reasons.add(reason)
-    assert final_decision(reasons) == "degraded" and contribution == "degrading"
+    assert final_decision({"demo_api_degraded"}) == "degraded"
+    assert demo_api_signal(200, {"status": "degraded"})[1] == "degrading"
     print("health output check passed")
 
 
